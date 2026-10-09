@@ -2,12 +2,15 @@ import React, { useState, useRef } from 'react';
 
 /**
  * Chat panel component with message display and input
+ * Connects to local OpenCode backend via /api/chat endpoint
  * Supports local message submission with Enter key
  * Accessible with proper labels and ARIA attributes
  */
 export function ChatPanel() {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -15,24 +18,60 @@ export function ChatPanel() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Trim and validate input
     const trimmedInput = inputValue.trim();
-    if (!trimmedInput) return;
+    if (!trimmedInput || loading) return;
 
     // Add user message
-    setMessages(prev => [...prev, { type: 'user', text: trimmedInput }]);
+    const userMessage = { type: 'user', text: trimmedInput };
+    setMessages(prev => [...prev, userMessage]);
     setInputValue('');
+    setError(null);
+    setLoading(true);
 
-    // Add assistant response after a brief delay
-    setTimeout(() => {
+    try {
+      // Call backend endpoint
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: trimmedInput,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.details || data.error || 'Chat service error');
+      }
+
+      const data = await response.json();
+      
+      // Add assistant message
       setMessages(prev => [...prev, { 
         type: 'assistant', 
-        text: 'Hi there! How can I help you today?' 
+        text: data.reply 
       }]);
-    }, 500);
+    } catch (err) {
+      // Show error message to user
+      const errorText = err instanceof Error 
+        ? err.message 
+        : 'Failed to connect to chat service';
+      
+      setError(errorText);
+      
+      // Add error message to chat
+      setMessages(prev => [...prev, { 
+        type: 'error', 
+        text: `Error: ${errorText}` 
+      }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -52,7 +91,7 @@ export function ChatPanel() {
         <div className="chat-messages" role="log" aria-live="polite" aria-label="Chat messages">
           {isEmpty && (
             <div className="chat-empty-state">
-              <p>Start a conversation...</p>
+              <p>Start a conversation with OpenCode...</p>
             </div>
           )}
           
@@ -67,6 +106,15 @@ export function ChatPanel() {
               </div>
             </div>
           ))}
+
+          {loading && (
+            <div className="chat-message chat-message-loading" role="status" aria-label="Loading response">
+              <div className="chat-message-content">
+                <span className="chat-loading-spinner"></span>
+                <span>OpenCode is thinking...</span>
+              </div>
+            </div>
+          )}
           
           <div ref={messagesEndRef} />
         </div>
@@ -83,22 +131,29 @@ export function ChatPanel() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
+              placeholder="Ask OpenCode something..."
               aria-describedby="chat-help"
               rows="2"
+              disabled={loading}
             />
             <button
               type="submit"
               className="chat-send-btn"
               aria-label="Send message"
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || loading}
             >
-              Send
+              {loading ? 'Sending...' : 'Send'}
             </button>
           </div>
           <small id="chat-help" className="chat-help">
             Press Enter to send, Shift+Enter for new line
           </small>
+          
+          {error && (
+            <div className="chat-error-message" role="alert">
+              {error}
+            </div>
+          )}
         </form>
       </div>
     </section>

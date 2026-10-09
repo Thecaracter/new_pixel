@@ -5,7 +5,8 @@
   "description": "Virtual office scene converted to React",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "node server.js",
+    "dev:frontend": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "type-check": "echo 'No TypeScript configured'"
@@ -14,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "express": "^4.18.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
