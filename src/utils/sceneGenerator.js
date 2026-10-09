@@ -101,8 +101,9 @@ export function generateScene() {
   const r0 = keyP(1.2, 1.1);
 
   add(5.1, person({
-    x: 2.3, y: 2.65, z: 0.55, sit: 1, back: 1,
-    hair: '#3a2a24', shirt: '#2fa7a0',
+    x: 2.3, y: 2.65, z: 0.55, sit: 1,
+    hair: '#3a2a24', hairStyle: 'bob', shirt: '#2fa7a0', body: 'jacket',
+    role: 'finance', activity: 'typing', accessory: 'glasses', expression: 'focused',
     tip: 'Rina – Akuntan|Mengetik laporan bulanan',
     extra: say('rina', 14, -54),
     arms: (sy, k) => {
@@ -121,8 +122,9 @@ export function generateScene() {
   add(5.8 + 3.85, `<g class="opt">${chair(5.8, 2.65, '#f26a5b')}</g>`);
 
   add(9.7, `<g class="opt">${person({
-    x: 5.8, y: 2.65, z: 0.55, sit: 1, back: 1,
-    hair: '#1f1b2e', skin: '#d9a273', shirt: '#8a63d2', hd: 1,
+    x: 5.8, y: 2.65, z: 0.55, sit: 1,
+    hair: '#1f1b2e', hairStyle: 'spiky', skin: '#d9a273', shirt: '#8a63d2', body: 'hoodie',
+    role: 'design', activity: 'typing', accessory: 'headset', expression: 'happy', hd: 1,
     tip: 'Dimas – Desainer|Menyusun mockup',
     extra: say('dimas', 14, -54),
     arms: (sy, k) =>
@@ -145,11 +147,12 @@ function generateMeetingArea(O) {
   const mi = ch(160);
   O.push([mi[0] + mi[1] + 0.05, person({
     x: mi[0], y: mi[1], z: 0.42, sit: 1,
-    hair: '#4a2c2a', long: 1, shirt: '#f2b84b', talk: 1,
+    hair: '#4a2c2a', hairStyle: 'pony', long: 1, shirt: '#f2b84b', body: 'dress',
+    role: 'sales', activity: 'phone', accessory: 'scarf', expression: 'happy', talk: 1,
     tip: 'Mira – Sales|Telepon dengan klien',
     arms: (sy, k) =>
-      armTo(8, sy, 14, sy + 6, '#f2b84b', '', 0, k) +
-      armTo(14, sy + 6, 9, -31, '#f2b84b', '', 0, k) +
+       armTo(8, sy, 14, sy + 6, '#f2b84b', '', 0, k) +
+       armTo(14, sy + 6, 9, -31, '#f2b84b', 'phone', 0, k) +
       armTo(-8, sy, ...L([mi[0], mi[1], 0.42], [8.95, 4.35, 0.88]), '#f2b84b', '', 0, k),
     extra: `<rect x="8" y="-38" width="4" height="9" rx="1.3" fill="#222"/>` + say('mira', 22, -54),
   })]);
@@ -174,7 +177,8 @@ function generateStandingChars(O) {
   // Arif - writing on board
   O.push([9.5, person({
     x: 8.9, y: 0.55, sit: 0, back: 1,
-    hair: '#2a2236', shirt: '#4a5fc1', pants: '#2f3558',
+    hair: '#2a2236', hairStyle: 'cap', shirt: '#4a5fc1', body: 'vest', pants: '#2f3558',
+    role: 'lead', activity: 'writing', accessory: 'badge', expression: 'focused',
     tip: 'Arif – Project Lead|Menulis rencana sprint di papan',
     extra: say('arif', 10, -62),
     arms: (sy, k) => {
@@ -186,7 +190,8 @@ function generateStandingChars(O) {
   // Bayu - talking
   O.push([12.1, person({
     x: 5.4, y: 6.1, sit: 0,
-    hair: '#2a2236', skin: '#d9a273', shirt: '#f26a5b', talk: 1, hd: 0.4,
+    hair: '#2a2236', hairStyle: 'undercut', skin: '#d9a273', shirt: '#f26a5b', body: 'jacket',
+    role: 'product', activity: 'talking', accessory: 'visor', expression: 'happy', talk: 1, hd: 0.4,
     tip: 'Bayu – Product|Berdiskusi soal jadwal rilis',
     arms: (sy, k) =>
       armTo(9, sy, 17, sy + 9, '#f26a5b', 'talk', 0, k) +
@@ -198,7 +203,9 @@ function generateStandingChars(O) {
   // Sinta - talking
   O.push([12.9, person({
     x: 6.7, y: 6.4, sit: 0,
-    hair: '#5a3425', long: 1, shirt: '#8a63d2', pants: '#2f3558', talk: 1, hd: 1.1,
+    hair: '#5a3425', hairStyle: 'curls', long: 1, shirt: '#8a63d2', body: 'dress',
+    role: 'marketing', activity: 'talking', accessory: 'earring', pants: '#2f3558', talk: 1, hd: 1.1,
+    cls: 'opt',
     tip: 'Sinta – Marketing|Berdiskusi soal kampanye',
     arms: (sy, k) =>
       armTo(-9, sy, -17, sy + 9, '#8a63d2', 'talk', 0.55, k) +
@@ -218,7 +225,8 @@ function generateWalker(O, s) {
     cls: 'opt',
     xy: [0, 0],
     both: 1,
-    hair: '#2a2236', skin: '#c68f64', shirt: '#2f9a92', pants: '#3b4468',
+    hair: '#2a2236', hairStyle: 'side', skin: '#c68f64', shirt: '#2f9a92', body: 'hoodie',
+    role: 'admin', activity: 'walking', accessory: 'badge', expression: 'happy', pants: '#3b4468',
     tip: 'Eko – Admin|Mengantar dokumen antar meja',
     extra: say('eko', 10, -62),
     arms: (sy, k) =>

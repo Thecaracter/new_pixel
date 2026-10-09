@@ -187,7 +187,40 @@ header p {
 }
 
 .char:hover .ppl {
-  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #ffd76a);
+  filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 8px #ffd76a);
+}
+
+.avatar {
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.avatar .ppl {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: avatarBreath 3.8s ease-in-out infinite;
+}
+
+.avatar .head {
+  animation-duration: 3.8s;
+}
+
+.avatar .eyes {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: blink 4.8s ease-in-out infinite;
+}
+
+.activity-phone .phone {
+  transform-origin: 50% 0;
+  animation: phoneGesture 1.8s ease-in-out infinite;
+}
+
+.activity-writing .wri {
+  animation-duration: 0.62s;
+}
+
+.activity-talking .talk {
+  animation-duration: 1.25s;
 }
 
 .arm,
@@ -213,6 +246,38 @@ header p {
 @keyframes typ {
   50% {
     transform: translateY(1.8px);
+  }
+}
+
+@keyframes avatarBreath {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(-1px) scaleY(1.018);
+  }
+}
+
+@keyframes blink {
+  0%,
+  44%,
+  48%,
+  100% {
+    transform: scaleY(1);
+  }
+  46% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes phoneGesture {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(7deg) translateY(-1px);
   }
 }
 
@@ -290,6 +355,19 @@ header p {
 
 .walking .ppl {
   animation: bob 0.55s ease-in-out infinite;
+}
+
+.walking .head {
+  animation: walkHead 0.55s ease-in-out infinite alternate;
+}
+
+@keyframes walkHead {
+  from {
+    transform: rotate(-2deg);
+  }
+  to {
+    transform: rotate(2deg);
+  }
 }
 
 @keyframes mth {
