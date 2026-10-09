@@ -25,7 +25,7 @@ export function VirtualOfficePage() {
         <OfficeScene stageRef={stageRef} />
       </main>
 
-      <ResponsiveNotes />
+      {/* <ResponsiveNotes /> */}
 
       <ChatPanel />
     </div>
