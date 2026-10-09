@@ -38,9 +38,3 @@ export function person(o) {
 export function bubble(x, y, d = 0) {
   return `<g transform="translate(${x},${y})"><g class="bub" style="animation-delay:${d}s"><rect x="-11" y="-8" width="22" height="14" rx="7" fill="#fff" stroke="#d6d0f0"/><path d="M-3 6l-2 4 6-4z" fill="#fff"/>${[-5, 0, 5].map((v, i) => `<circle class="dot" cx="${v}" cy="-1" r="1.7" fill="#7a6fd0" style="animation-delay:${i * 0.2 + d}s"/>`).join('')}</g></g>`;
 }
-
-
-// Bubble (speech indicator)
-export function bubble(x, y, d = 0) {
-  return `<g transform="translate(${x},${y})"><g class="bub" style="animation-delay:${d}s"><rect x="-11" y="-8" width="22" height="14" rx="7" fill="#fff" stroke="#d6d0f0"/><path d="M-3 6l-2 4 6-4z" fill="#fff"/>${[-5, 0, 5].map((v, i) => `<circle class="dot" cx="${v}" cy="-1" r="1.7" fill="#7a6fd0" style="animation-delay:${i * 0.2 + d}s"/>`).join('')}</g></g>`;
-}

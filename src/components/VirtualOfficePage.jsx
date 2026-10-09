@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { OfficeHeader } from './OfficeHeader';
 import { OfficeScene } from './OfficeScene';
 import { ResponsiveNotes } from './ResponsiveNotes';
+import { ChatPanel } from './ChatPanel';
 
 /**
  * Virtual Office page shell
@@ -25,6 +26,8 @@ export function VirtualOfficePage() {
       </main>
 
       <ResponsiveNotes />
+
+      <ChatPanel />
     </div>
   );
 }
