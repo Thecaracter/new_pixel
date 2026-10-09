@@ -223,11 +223,32 @@ BACKEND_PORT=3000 npm run dev
 
 ## Troubleshooting
 
-### Chat shows "Could not load available models"
+### Chat shows "Backend not running — start with: npm run dev"
+
+This error means the frontend cannot connect to the Express backend on `http://127.0.0.1:3001`. The backend and Vite frontend run together:
+
+1. **Ensure you used the full dev command**: `npm run dev` (not `npm run dev:frontend`)
+   - `npm run dev` starts BOTH backend (3001) and frontend (5173)
+   - `npm run dev:frontend` only starts Vite and has no backend
+2. **Check backend startup**: Look at the console output from `npm run dev`; you should see:
+   ```
+   ✅ Backend server running on http://127.0.0.1:3001
+   ✅ Chat API available at http://127.0.0.1:3001/api/chat
+   ✅ Models endpoint available at http://127.0.0.1:3001/api/models
+   ```
+3. **Verify port 3001 is not in use**:
+   - Windows: `netstat -ano | findstr :3001`
+   - macOS/Linux: `lsof -i :3001`
+   - If in use, set `BACKEND_PORT=3002 npm run dev` to use a different port
+
+### Chat shows "Could not load available models" (generic error)
+
+If you see a different error message with more details:
 
 1. **Check backend is running**: Backend should print to console on startup
 2. **Verify `/api/models` endpoint**: Open `http://127.0.0.1:3001/api/models` in your browser
 3. **Check server logs** for errors during model discovery
+4. **Check browser console** (F12) for network errors on the `/api/models` request
 
 ### Model selector shows "No models available"
 

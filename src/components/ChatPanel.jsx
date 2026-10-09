@@ -24,9 +24,11 @@ export function ChatPanel() {
     const fetchModels = async () => {
       try {
         setModelsLoading(true);
+        setModelsError(null);
         const response = await fetch('/api/models');
         if (!response.ok) {
-          throw new Error('Failed to fetch models');
+          const text = await response.text();
+          throw new Error(`HTTP ${response.status}: ${text || response.statusText}`);
         }
         const data = await response.json();
         setAvailableModels(data.models || []);
@@ -36,10 +38,17 @@ export function ChatPanel() {
         setModelsError(null);
       } catch (err) {
         console.error('Error fetching models:', err);
-        setModelsError('Could not load available models');
-        // Set a default if available
+        // Provide specific error messages based on the error type
+        let errorMsg = 'Could not load available models';
+        if (err instanceof TypeError && err.message.includes('fetch')) {
+          errorMsg = 'Backend not running — start with: npm run dev';
+        } else if (err instanceof SyntaxError) {
+          errorMsg = 'Invalid response from backend';
+        } else if (err.message) {
+          errorMsg = `Error: ${err.message}`;
+        }
+        setModelsError(errorMsg);
         setAvailableModels([]);
-        setModelsLoading(false);
       } finally {
         setModelsLoading(false);
       }

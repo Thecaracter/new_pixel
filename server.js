@@ -242,12 +242,13 @@ app.get('*', (req, res) => {
 
 // Start backend server
 const BACKEND_PORT = process.env.BACKEND_PORT || 3001;
-app.listen(BACKEND_PORT, '127.0.0.1', () => {
-  console.log(`Backend server running on http://127.0.0.1:${BACKEND_PORT}`);
-  console.log(`Chat API available at http://127.0.0.1:${BACKEND_PORT}/api/chat`);
+const server = app.listen(BACKEND_PORT, '127.0.0.1', () => {
+  console.log(`✅ Backend server running on http://127.0.0.1:${BACKEND_PORT}`);
+  console.log(`✅ Chat API available at http://127.0.0.1:${BACKEND_PORT}/api/chat`);
+  console.log(`✅ Models endpoint available at http://127.0.0.1:${BACKEND_PORT}/api/models`);
   
-  // Spawn Vite dev server
-  console.log('\nStarting Vite dev server...');
+  // Spawn Vite dev server after backend is ready
+  console.log('\n📦 Starting Vite dev server...');
   const vite = spawn('npm', ['run', 'dev:frontend'], {
     cwd: __dirname,
     stdio: 'inherit',
@@ -255,6 +256,6 @@ app.listen(BACKEND_PORT, '127.0.0.1', () => {
   });
 
   vite.on('error', (err) => {
-    console.error('Failed to start Vite:', err);
+    console.error('❌ Failed to start Vite:', err);
   });
 });
