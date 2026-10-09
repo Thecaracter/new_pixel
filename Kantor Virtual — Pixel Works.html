@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kantor Virtual — Pixel Works</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--a:#f3ecff;--b:#ffe9d6;--ink:#2b2750;--mute:#6a6591;--card:rgba(255,255,255,.7);--pill:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--a:#1a1740;--b:#2a1f4f;--ink:#f4f1ff;--mute:#b3aedc;--card:rgba(255,255,255,.08);--pill:#2d2860}}
+:root[data-theme="dark"]{--a:#1a1740;--b:#2a1f4f;--ink:#f4f1ff;--mute:#b3aedc;--card:rgba(255,255,255,.08);--pill:#2d2860}
+*{box-sizing:border-box}html,body{margin:0;height:auto}
+body{font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:radial-gradient(1200px 700px at 50% 30%,var(--b),var(--a));min-height:100%;overflow-x:hidden}
+.bg{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.bg i{position:absolute;border-radius:50%;background:#fff;opacity:.18;filter:blur(2px);transition:transform .4s ease-out}
+.bg i:nth-child(1){width:220px;height:220px;left:6%;top:12%}.bg i:nth-child(2){width:140px;height:140px;right:8%;top:20%}.bg i:nth-child(3){width:300px;height:300px;right:20%;bottom:6%}
+header{position:relative;z-index:3;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px clamp(16px,4vw,48px) 0}
+h1{margin:0;font-size:clamp(22px,3.2vw,34px);font-weight:800;letter-spacing:-.01em}
+header p{margin:4px 0 0;color:var(--mute);font-weight:600;font-size:14px}
+.chip{background:var(--pill);padding:8px 14px;border-radius:99px;font-weight:800;font-size:13px;box-shadow:0 4px 14px rgba(40,30,90,.12);white-space:nowrap}
+.chip b{color:#2fbf71}
+.stage{position:relative;max-width:1180px;margin:0 auto;padding:0 8px}
+#svg{display:block;width:100%;height:auto;max-height:80vh;transition:transform .35s ease-out;overflow:visible}
+#tip{position:absolute;pointer-events:none;opacity:0;transition:opacity .15s;transform:translate(-50%,-115%);background:#2b2750;color:#fff;border-radius:12px;padding:8px 12px;font-size:12.5px;line-height:1.35;box-shadow:0 8px 20px rgba(0,0,0,.3);z-index:5;white-space:nowrap}
+#tip b{display:block;font-size:13px}#tip span{opacity:.8}
+.hov{transition:filter .2s;cursor:default}.hov:hover{filter:brightness(1.1) drop-shadow(0 0 3px rgba(255,255,255,.9))}
+.ring{fill:none;stroke:#fff;stroke-width:2;opacity:0;transition:opacity .2s}.char:hover .ring{opacity:1}
+.char:hover .ppl{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #ffd76a)}
+.arm,.leg,.head,.mouth{transform-box:fill-box}.arm,.leg{transform-origin:50% 0}.head{transform-origin:50% 100%}.mouth{transform-origin:50% 50%}
+@keyframes typ{50%{transform:translateY(1.8px)}}.typ{animation:typ .28s ease-in-out infinite}.typ.b{animation-delay:-.14s;animation-duration:.34s}
+@keyframes nod{50%{transform:translateY(-1.3px) rotate(2.5deg)}}.head{animation:nod 3.2s ease-in-out infinite}
+@keyframes talk{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(24deg)}}.talk{animation:talk 1.1s ease-in-out infinite}
+@keyframes wri{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}.wri{animation:wri .8s ease-in-out infinite}
+@keyframes swg{from{transform:rotate(-26deg)}to{transform:rotate(26deg)}}
+.walking .leg.a,.walking .arm.s1{animation:swg .55s ease-in-out infinite alternate}.walking .leg.b,.walking .arm.s2{animation:swg .55s ease-in-out infinite alternate-reverse}
+@keyframes bob{50%{transform:translateY(-1.6px)}}.walking .ppl{animation:bob .55s ease-in-out infinite}
+@keyframes mth{to{transform:scaleY(1.9)}}.mouth{animation:mth .3s ease-in-out infinite alternate}
+@keyframes bub{0%,55%,100%{opacity:0;transform:translateY(3px)}8%,45%{opacity:1;transform:translateY(0)}}.bub{animation:bub 3.2s ease-in-out infinite}
+@keyframes dots{50%{opacity:.2}}.dot{animation:dots 1s infinite}
+@keyframes scr{50%{opacity:.25}}.ln{animation:scr 2.4s ease-in-out infinite}
+@keyframes draw{0%{stroke-dashoffset:90}60%,100%{stroke-dashoffset:0}}.scrib{stroke-dasharray:90;animation:draw 3.5s ease-in-out infinite}
+@keyframes sway{50%{transform:rotate(2.5deg)}}.sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 4s ease-in-out infinite}
+@keyframes emo{0%{opacity:0;transform:translateY(4px)}20%,70%{opacity:1;transform:translateY(-2px)}100%{opacity:0;transform:translateY(-10px)}}.emo{animation:emo 4s ease-in-out infinite}
+@keyframes steam{0%{opacity:0}40%{opacity:.8}100%{opacity:0;transform:translateY(-5px)}}.steam{animation:steam 2.6s ease-in-out infinite}
+@keyframes mote{0%,100%{opacity:0;transform:translate(0,0)}50%{opacity:.85;transform:translate(6px,-8px)}}.mote{opacity:.35;animation:mote 6s ease-in-out infinite}
+@keyframes breath{50%{transform:scaleY(1.12)}}.breath{transform-box:fill-box;transform-origin:50% 100%;animation:breath 3s ease-in-out infinite}
+.say{opacity:0;transition:opacity .35s}
+.away .fr{display:none}.bk{display:none}.away .bk{display:inline}
+.notes{position:relative;z-index:2;max-width:1180px;margin:8px auto 0;padding:24px clamp(16px,4vw,48px) 48px}
+.notes h2{font-size:18px;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.card{background:var(--card);backdrop-filter:blur(6px);border-radius:16px;padding:14px 16px;font-size:13.5px;line-height:1.5;color:var(--mute);box-shadow:0 6px 18px rgba(40,30,90,.08)}
+.card b{display:block;color:var(--ink);font-size:14.5px;margin-bottom:2px}
+@media(max-width:640px){.opt{display:none}header p{display:none}#svg{max-height:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.scrib{stroke-dashoffset:0}.bub{opacity:1}}
+</style></head><body>
+<div class="bg" id="bg"><i></i><i></i><i></i></div>
+<header><div><h1>Kantor Virtual · Pixel Works</h1><p>Tim kecil yang sibuk. Lihat siapa mengerjakan apa pagi ini.</p></div><div class="chip"><b>●</b> Live · Senin 09.41</div></header>
+<main class="stage" id="stage"><svg id="svg" viewBox="60 0 900 650" role="img" aria-label="Ilustrasi isometrik kantor virtual dengan karyawan yang sedang bekerja"></svg><div id="tip"></div></main>
+<section class="notes"><h2>Perilaku responsif &amp; aksesibilitas</h2><div class="grid">
+<div class="card"><b>Desktop ≥ 1024px</b>Seluruh ruangan dengan 7 karakter, label meja saat hover, parallax kursor dan scroll.</div>
+<div class="card"><b>Tablet 640–1023px</b>Adegan penuh. Label muncul saat ketuk, parallax hanya dari scroll.</div>
+<div class="card"><b>Mobile &lt; 640px</b>Ruangan disederhanakan: lounge, pantry, dan 2 karakter disembunyikan (sisa 5), kamera lebih dekat.</div>
+<div class="card"><b>prefers-reduced-motion</b>Semua loop berhenti. Adegan jadi statis, tanpa parallax. Gelembung bicara tetap terlihat.</div>
+</div></section>
+<script>
+/* ====== EDIT DI SINI: kalimat tiap karakter (bergantian otomatis) ======
+   Tips: tulis singkat (maks ~28 huruf) supaya balon tidak terlalu lebar. */
+const KALIMAT={
+ rina:['Laporan bulan ini hampir beres!','Tinggal cek angka terakhir.','Kopi dulu, lanjut lagi.'],
+ dimas:['Warnanya kurang pop ya?','Mockup versi 3 siap!','Minta feedback dong.'],
+ eko:['Dokumen buat Pak Arif!','Permisi, numpang lewat.','Ambil air dulu ya.'],
+ bayu:['Rilis kita geser ke Jumat?','Fitur login sudah aman.','Cek timeline lagi yuk.'],
+ sinta:['Kampanye tayang besok.','Budget iklan masih cukup.','Setuju, mulai Senin!'],
+ mira:['Baik Pak, saya kirim ulang.','Penawarannya sudah saya cek.','Terima kasih waktunya!'],
+ arif:['Sprint ini ada 3 target.','Prioritas: onboarding dulu.','Ada yang mau nambah?']
+};
+const JEDA=3600; // lama tiap kalimat tampil (ms)
+/* ====== selesai ====== */
+const W=40,H=34,OX=450,OY=170,S=1.25;
+const P=(x,y,z=0)=>[OX+(x-y)*W,OY+(x+y)*W/2-z*H];
+const pts=a=>a.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+const poly=(a,f,x='')=>`<polygon points="${pts(a)}" fill="${f}" ${x}/>`;
+function sh(hex,f){const n=parseInt(hex.slice(1),16);return'#'+[n>>16,n>>8&255,n&255].map(v=>Math.round(v*f).toString(16).padStart(2,'0')).join('')}
+function box(x,y,z,w,d,h,c,o={}){const t=o.t||c,l=o.l||sh(c,.84),r=o.r||sh(c,.68);
+return poly([P(x,y,z+h),P(x+w,y,z+h),P(x+w,y+d,z+h),P(x,y+d,z+h)],t)+poly([P(x,y+d,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x,y+d,z+h)],l)+poly([P(x+w,y,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x+w,y,z+h)],r)}
+function cyl(x,y,z,r,h,top,side){const rx=56.57*r,ry=28.28*r,[bx,by]=P(x,y,z),[,ty]=P(x,y,z+h);side=side||sh(top,.75);
+return `<path d="M${bx-rx},${ty}L${bx-rx},${by}A${rx},${ry} 0 0 0 ${bx+rx},${by}L${bx+rx},${ty}Z" fill="${side}"/><ellipse cx="${bx}" cy="${ty}" rx="${rx}" ry="${ry}" fill="${top}"/>`}
+const wl=(a,b,z0,z1,f,x='')=>poly([P(0,a,z0),P(0,b,z0),P(0,b,z1),P(0,a,z1)],f,x);
+const wr=(a,b,z0,z1,f,x='')=>poly([P(a,0,z0),P(b,0,z0),P(b,0,z1),P(a,0,z1)],f,x);
+const fq=(x0,x1,z0,z1,y,f,x='')=>poly([P(x0,y,z0),P(x1,y,z0),P(x1,y,z1),P(x0,y,z1)],f,x);
+const pl=(xp,ya,yb,z0,z1,f)=>poly([P(xp,ya,z0),P(xp,yb,z0),P(xp,yb,z1),P(xp,ya,z1)],f);
+const ell=(x,y,r,f,o=1)=>{const[a,b]=P(x,y);return`<ellipse cx="${a}" cy="${b}" rx="${56.57*r}" ry="${28.28*r}" fill="${f}" opacity="${o}"/>`};
+function win(q,a,b){const w=b-a;let s=q(a-.12,b+.12,1.1,3.55,'#fbf5e8')+q(a,b,1.2,3.45,'url(#sky)');
+s+=q(a+w*.05,a+w*.3,1.2,2.2,'#9bbbe3')+q(a+w*.35,a+w*.6,1.2,2.8,'#86a9d6')+q(a+w*.65,a+w*.95,1.2,2.05,'#a6c4e8');
+return s+q((a+b)/2-.03,(a+b)/2+.03,1.2,3.45,'#fbf5e8')+q(a,b,2.3,2.36,'#fbf5e8')}
+function plant(x,y,k){const[bx,by]=P(x,y,.38*k);const g=['#3fae6a','#2f9a5a','#58c47d'];let l='';
+[-55,-28,0,28,55].forEach((a,i)=>{l+=`<path d="M0 0Q-9 -18 0 -${34*k}Q9 -18 0 0Z" transform="rotate(${a}) scale(${.9+(i%2)*.15})" fill="${g[i%3]}"/>`});
+return cyl(x,y,0,.26*k,.38*k,'#d9674c')+`<g transform="translate(${bx},${by})"><g class="sway">${l}</g></g>`}
+function chair(cx,cy,c='#2fa7a0'){return cyl(cx,cy,0,.12,.34,'#555')+cyl(cx,cy,.34,.36,.12,c)+box(cx-.28,cy+.28,.46,.56,.09,.55,c)}
+function desk(x,y,n,who,task,o={}){let s=box(x+.05,y+.08,0,.12,1.04,.78,'#a8703f')+box(x+2.03,y+.08,0,.12,1.04,.78,'#a8703f')+box(x,y,.78,2.2,1.2,.12,'#e2ac72',{l:'#c98f5a',r:'#a97445'});
+const mx=x+.65,my=y+.22;
+s+=box(mx+.3,my+.02,.9,.35,.15,.06,'#444')+box(mx,my,.96,.95,.08,.55,'#262b40');
+s+=fq(mx+.07,mx+.88,1.0,1.46,my+.08,'#58b9ff');
+[0,1,2].forEach(i=>s+=fq(mx+.14,mx+.3+.38*((i*5)%3+1)*.6,1.34-i*.11,1.38-i*.11,my+.08,'#fff',`class="ln" opacity=".7" style="animation-delay:${i*.5}s"`));
+s+=box(x+.7,y+.55,.9,.8,.28,.035,'#f3f1ee')+box(x+1.65,y+.65,.9,.14,.2,.03,'#ddd')+cyl(x+.35,y+.5,.9,.1,.16,o.mug||'#f26a5b')+steam(x+.35,y+.5);
+if(o.paper)s+=box(x+1.6,y+.12,.9,.4,.5,.02,'#fff');
+return `<g class="hov" data-tip="Meja 0${n}|${who} — ${task}">${s}</g>`}
+function bubble(x,y,d=0){return `<g transform="translate(${x},${y})"><g class="bub" style="animation-delay:${d}s"><rect x="-11" y="-8" width="22" height="14" rx="7" fill="#fff" stroke="#d6d0f0"/><path d="M-3 6l-2 4 6-4z" fill="#fff"/>${[-5,0,5].map((v,i)=>`<circle class="dot" cx="${v}" cy="-1" r="1.7" fill="#7a6fd0" style="animation-delay:${i*.2+d}s"/>`).join('')}</g></g>`}
+function armTo(sx,sy,tx,ty,c,cls='',d=0,hand='#f2c9a0'){const dx=tx-sx,dy=ty-sy,len=Math.hypot(dx,dy),a=Math.atan2(-dx,dy)*180/Math.PI;
+return `<g transform="translate(${sx},${sy}) rotate(${a.toFixed(1)})"><g class="arm ${cls}" style="animation-delay:${d}s"><rect x="-2.3" width="4.6" height="${len.toFixed(1)}" rx="2.3" fill="${c}"/><circle cy="${len.toFixed(1)}" r="2.8" fill="${hand}"/></g></g>`}
+const L=(o,t)=>{const a=P(...o),b=P(...t);return[(b[0]-a[0])/S,(b[1]-a[1])/S]};
+function head(k,h,o){const lg=o.long?`<rect x="-8.6" y="-5" width="17.2" height="17" rx="7" fill="${h}"/>`:'';
+const fr=`${lg}<circle r="7.6" fill="${k}"/><path d="M-8 0A8 8 0 0 1 8 0Q3 -4.5 -2 -5.5Q-6 -4 -8 0Z" fill="${h}"/><circle cx="-2.7" cy="1.2" r="1.05" fill="#2b2233"/><circle cx="2.7" cy="1.2" r="1.05" fill="#2b2233"/><ellipse class="${o.talk?'mouth':''}" cy="4.5" rx="1.8" ry=".9" fill="#b4504a"/>`;
+const bk=`${lg}<circle r="7.6" fill="${k}"/><circle cy="-.8" r="8" fill="${h}"/>`;
+return o.both?`<g class="fr">${fr}</g><g class="bk">${bk}</g>`:(o.back?bk:fr)}
+function person(o){const[X,Y]=o.xy||P(o.x,o.y,o.z||0),sit=o.sit,tb=sit?-6:-17,k=o.skin||'#f2c9a0',p=o.pants||'#3b4468',sy=tb-15,cy=sit?7:2;
+let g=`<ellipse cy="${cy}" rx="11" ry="5" fill="#000" opacity=".16"/><ellipse class="ring" cy="${cy}" rx="15" ry="7.5"/>`;
+g+=sit?`<rect x="-8" y="-8" width="16" height="9" rx="3.5" fill="${p}"/><rect x="-7" y="0" width="5" height="9" rx="2" fill="${p}"/><rect x="2" y="0" width="5" height="9" rx="2" fill="${p}"/>`
+:`<rect class="leg a" x="-6" y="-18" width="5" height="18" rx="2.2" fill="${p}"/><rect class="leg b" x="1" y="-18" width="5" height="18" rx="2.2" fill="${p}"/>`;
+g+=`<rect x="-8.5" y="${tb-19}" width="17" height="21" rx="7" fill="${o.shirt}"/>`+o.arms(sy,k);
+g+=`<g transform="translate(0,${tb-26})"><g class="head" style="animation-delay:${o.hd||0}s">${head(k,o.hair,o)}</g></g>`+(o.extra||'');
+return `<g ${o.id?`id="${o.id}"`:''} class="char hov ${o.cls||''}" data-tip="${o.tip}" transform="translate(${X.toFixed(1)},${Y.toFixed(1)})"><g transform="scale(${S})"><g class="ppl">${g}</g></g></g>`}
+const say=(id,x,y)=>`<g transform="translate(${x},${y})"><g class="say" data-say="${id}"><rect fill="#fff" stroke="#d6d0f0"/><path class="tail" fill="#fff"/><text font-size="8.5" font-weight="800" fill="#2b2750" text-anchor="middle" y="3"></text></g></g>`;
+const emo=(x,y,ch,d)=>`<text class="emo" x="${x}" y="${y}" font-size="11" text-anchor="middle" style="animation-delay:${d}s">${ch}</text>`;
+const steam=(x,y)=>{const[a,b]=P(x,y,1.1);return `<path class="steam" d="M${a},${b}q-4 -6 0 -11t0 -11" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`};
+const hang=(sy,c,k,cls1='',cls2='')=>armTo(-9,sy,-10,sy+15,c,cls1,0,k)+armTo(9,sy,10,sy+15,c,cls2,0,k);
+
+/* ---------- build scene ---------- */
+let s=`<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cc3ff"/><stop offset="1" stop-color="#e8f5ff"/></linearGradient></defs>`;
+s+=`<ellipse cx="510" cy="632" rx="470" ry="34" fill="#1b1740" opacity=".3" style="filter:blur(12px)"/>`;
+s+=poly([P(0,9),P(12,9),P(12,9,-.5),P(0,9,-.5)],'#b07a45')+poly([P(12,0),P(12,9),P(12,9,-.5),P(12,0,-.5)],'#8d5d33');
+s+=poly([P(0,0),P(12,0),P(12,9),P(0,9)],'#e3b47e');
+for(let i=1;i<12;i++)s+=`<path d="M${P(i,0)}L${P(i,9)}" stroke="#8a5a2b" stroke-opacity=".1"/>`;
+s+=ell(9.4,4.1,2.7,'#2fa7a0',.5)+ell(9.4,4.1,2.3,'#f6efe0',.35)+ell(2.6,3.6,2.2,'#d9c6f2',.55)+`<g class="opt">${ell(10,7.5,1.9,'#f2b84b',.5)}</g>`;
+/* walls */
+s+=poly([P(0,0),P(0,9),P(0,9,4),P(0,0,4)],'#e6d1ad')+poly([P(0,0),P(12,0),P(12,0,4),P(0,0,4)],'#f7ecd6');
+s+=wl(0,9,.25,1,'#2f9a92')+wr(0,12,.25,1,'#3bb4ab')+wl(0,9,0,.25,'#bfa27a')+wr(0,12,0,.25,'#cdb28a')+wl(0,9,3.75,3.85,'#d4bb92')+wr(0,12,3.75,3.85,'#e4cfa8');
+s+=win(wl,2.2,4.0)+win(wl,4.8,6.6)+win(wr,.8,2.8)+win(wr,3.4,5.4);
+s+=poly([P(0,2.2),P(0,4),P(4.2,5.4),P(4.2,3.6)],'#fff','opacity=".15"')+poly([P(0,4.8),P(0,6.6),P(4.2,7.6),P(4.2,5.8)],'#fff','opacity=".12"');
+s+=Array.from({length:14},(_,i)=>{const[a,b]=P(.4+i*.3,2.6+(i*5%7)*.45,1+(i%4)*.35);return `<circle class="mote" cx="${a}" cy="${b}" r="1.6" fill="#fff" style="animation-delay:${i*.6}s"/>`}).join('');
+/* whiteboard */
+s+=wr(7.05,10.55,1.15,3.45,'#c4ccd8')+wr(7.15,10.45,1.25,3.35,'#fff');
+s+=wr(7.4,7.7,1.4,2.1,'#2fa7a0')+wr(7.8,8.1,1.4,2.6,'#f26a5b')+wr(8.2,8.5,1.4,1.9,'#f2b84b')+wr(7.4,8.5,2.9,3.0,'#c9c3e8')+wr(7.4,8.2,3.05,3.15,'#c9c3e8');
+s+=wr(10.0,10.3,2.6,2.9,'#ffe27a')+wr(10.0,10.3,2.15,2.45,'#ff9f8a')+wr(9.6,9.9,2.9,3.2,'#9ee3c0');
+s+=`<path class="scrib" d="M${P(8.85,0,2.0)}L${P(9.1,0,2.5)}L${P(9.35,0,1.95)}L${P(9.6,0,2.5)}L${P(9.85,0,2.05)}" fill="none" stroke="#3b46c9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+s+=`<g class="hov" data-tip="Papan Sprint|Rencana kerja minggu ini">${wr(7.05,10.55,1.15,1.25,'#9aa3b4')}</g>`;
+/* clock + poster */
+const cp=[];for(let i=0;i<20;i++){const a=i/20*6.283;cp.push(P(6.6+.3*Math.cos(a),0,3.05+.35*Math.sin(a)))}
+s+=poly(cp,'#fff','stroke="#2d3a6b" stroke-width="2"')+`<path d="M${P(6.6,0,3.05)}L${P(6.6,0,3.3)}M${P(6.6,0,3.05)}L${P(6.78,0,3.05)}" stroke="#2d3a6b" stroke-width="2" stroke-linecap="round"/>`;
+s+=wr(10.95,11.95,1.4,3.0,'#fff')+wr(11.05,11.85,1.5,2.9,'#ffd9c9')+wr(11.15,11.55,1.6,2.4,'#f26a5b')+wr(11.4,11.75,2.1,2.8,'#2fa7a0');
+/* objects */
+const O=[];const add=(d,x)=>O.push([d,x]);
+/* bookshelf + cabinet */
+let bs=box(.1,.3,0,.7,1.4,2.6,'#b98048');const cols=['#f26a5b','#2fa7a0','#f2b84b','#4a5fc1','#8a63d2'];
+for(let r=0;r<3;r++){bs+=pl(.8,.4,1.6,.2+r*.8,.8+r*.8,'#8a5a32');for(let i=0;i<8;i++){const a=.45+i*.14;bs+=pl(.8,a,a+.11,.2+r*.8,.55+r*.8+((i*7+r*3)%4)*.05,cols[(i+r*2)%5])}}
+add(2,`<g class="hov" data-tip="Rak Arsip|Dokumen proyek">${bs}</g>`);
+add(8,`<g class="hov" data-tip="Printer &amp; Lemari|Cetak kontrak">${box(.1,6.9,0,.9,1.8,1.1,'#d8d2c4')+pl(1,7.5,8.1,.55,.62,'#8a8a8a')+box(.2,7.3,1.1,.7,.9,.3,'#fff')+box(.25,7.45,1.4,.4,.5,.04,'#ddd')}</g>`);
+add(9.8,`<g class="hov opt" data-tip="Pantry|Isi ulang air &amp; kopi">${box(1.7,8.1,0,.5,.5,.9,'#e9eef7')+cyl(1.95,8.35,.9,.2,.45,'#8fd3ff')}</g>`);
+add(1,plant(11.4,.8,1.5));add(19.7,`<g class="opt">${plant(11.3,8.4,1.3)}</g>`);add(14.8,plant(6.3,8.5,1.1));
+/* desks + chairs + typists */
+const keyP=(dx,dy)=>[dx+1.1,dy+1.55,.55];
+add(2.3+1.1+.6,desk(1.2,1.1,1,'Rina','Laporan keuangan',{paper:1}));
+add(2.3+3.2,chair(2.3,2.65));
+const r0=keyP(1.2,1.1);
+add(5.1,person({x:2.3,y:2.65,z:.55,sit:1,back:1,hair:'#3a2a24',shirt:'#2fa7a0',tip:'Rina · Akuntan|Mengetik laporan bulanan',extra:say('rina',14,-54),arms:(sy,k)=>{const a=L([2.3,2.65,.55],[2.05,1.7,.95]),b=L([2.3,2.65,.55],[2.55,1.7,.95]);return armTo(-7,sy,...a,'#2fa7a0','typ',0,k)+armTo(7,sy,...b,'#2fa7a0','typ b',0,k)}}));
+add(1.2+1.1+4.4+.6,desk(1.2,4.4,2,'Eko','sedang berkeliling',{mug:'#4a5fc1'}));
+add(2.3+6.05,chair(2.2,6.1,'#f2b84b'));
+add(4.7+1.1+1.7,`<g class="opt">${desk(4.7,1.1,3,'Dimas','Mockup aplikasi',{mug:'#f2b84b',paper:1})}</g>`);
+add(5.8+3.85,`<g class="opt">${chair(5.8,2.65,'#f26a5b')}</g>`);
+add(9.7,`<g class="opt">${person({x:5.8,y:2.65,z:.55,sit:1,back:1,hair:'#1f1b2e',skin:'#d9a273',shirt:'#8a63d2',hd:1,tip:'Dimas · Desainer|Menyusun mockup',extra:say('dimas',14,-54),arms:(sy,k)=>armTo(-7,sy,...L([5.8,2.65,.55],[5.55,1.7,.95]),'#8a63d2','typ',0,k)+armTo(7,sy,...L([5.8,2.65,.55],[6.05,1.7,.95]),'#8a63d2','typ b',0,k)})}</g>`);
+/* meeting */
+const C=[9.4,4.1],ch=(a)=>[C[0]+1.9*Math.cos(a*Math.PI/180),C[1]+1.9*Math.sin(a*Math.PI/180)];
+[160,205,250,330,20,90].forEach(a=>{const[x,y]=ch(a);add(x+y,cyl(x,y,0,.1,.3,'#555')+cyl(x,y,.3,.38,.12,'#f26a5b'))});
+const mi=ch(160);
+add(mi[0]+mi[1]+.05,person({x:mi[0],y:mi[1],z:.42,sit:1,hair:'#4a2c2a',long:1,shirt:'#f2b84b',talk:1,tip:'Mira · Sales|Telepon dengan klien',
+arms:(sy,k)=>armTo(8,sy,14,sy+6,'#f2b84b','',0,k)+armTo(14,sy+6,9,-31,'#f2b84b','',0,k)+armTo(-8,sy,...L([mi[0],mi[1],.42],[8.95,4.35,.88]),'#f2b84b','',0,k),
+extra:`<rect x="8" y="-38" width="4" height="9" rx="1.3" fill="#222"/>`+say('mira',22,-54)}));
+add(13.5,`<g class="hov" data-tip="Ruang Meeting|Sinkron mingguan dengan klien">${cyl(9.4,4.1,0,.7,.05,'#4a3a2e')+cyl(9.4,4.1,.05,.32,.73,'#6b4f3a')+cyl(9.4,4.1,.78,1.3,.08,'#ecbf86','#b9824f')+box(8.4,3.8,.86,.6,.7,.04,'#c9ccd6')+box(8.35,3.8,.86,.05,.7,.42,'#262b40',{r:'#58b9ff'})+box(9.6,4.4,.86,.5,.4,.02,'#fff')+cyl(10.2,3.6,.86,.1,.16,'#2fa7a0')+cyl(9.9,4.2,.86,.07,.1,'#d9674c')}</g>`);
+/* lounge */
+add(17.2,`<g class="opt hov" data-tip="Area Santai|Istirahat 5 menit">${box(8.8,7.6,0,2.4,.95,.45,'#4a5fc1')+box(8.8,7.6,.45,2.4,.3,.6,'#3c4faa')+box(8.75,7.6,.45,.2,.95,.3,'#3c4faa')+box(11.05,7.6,.45,.2,.95,.3,'#3c4faa')+box(9.1,7.95,.45,.6,.5,.12,'#f2b84b')+cyl(10,8.55,0,.36,.4,'#e2ac72')}</g>`);
+{const[cx,cy]=P(3.1,3.9);add(7.0,`<g class="hov" data-tip="Mochi|Kucing kantor, lagi tidur siang" transform="translate(${cx},${cy})"><ellipse cy="-1" rx="13" ry="4" fill="#000" opacity=".15"/><g class="breath"><ellipse cy="-5" rx="11" ry="6" fill="#f2b84b"/><circle cx="-9" cy="-7" r="5.5" fill="#f2b84b"/><path d="M-13 -11l1 -5 3 3zM-8 -12l3 -4 1 5z" fill="#f2b84b"/><path d="M4 -8q8 -2 9 3" stroke="#e29a2a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M-12 -7q2 1.5 4 0" stroke="#5a3b1a" fill="none"/></g><text class="emo" x="-4" y="-18" font-size="9" fill="#fff" font-weight="800">z</text></g>`)}
+/* standing chars (static) */
+add(9.5,person({x:8.9,y:.55,sit:0,back:1,hair:'#2a2236',shirt:'#4a5fc1',pants:'#2f3558',tip:'Arif · Project Lead|Menulis rencana sprint di papan',extra:say('arif',10,-62),
+arms:(sy,k)=>{const t=L([8.9,.55,0],[9.25,0,1.95]);return armTo(8,sy,...t,'#4a5fc1','wri',0,k)+armTo(-9,sy,-10,sy+15,'#4a5fc1','',0,k)}}));
+add(12.1,person({x:5.4,y:6.1,sit:0,hair:'#2a2236',skin:'#d9a273',shirt:'#f26a5b',talk:1,hd:.4,tip:'Bayu · Product|Berdiskusi soal jadwal rilis',
+arms:(sy,k)=>armTo(9,sy,17,sy+9,'#f26a5b','talk',0,k)+armTo(-9,sy,-6,sy+11,'#f26a5b','',0,k)+`<rect x="-10" y="${sy+9}" width="8" height="10" rx="1.5" fill="#d9e2f5" stroke="#8aa0c8"/>`,
+extra:say('bayu',-6,-62)}));
+add(12.9,person({x:6.7,y:6.4,sit:0,hair:'#5a3425',long:1,shirt:'#8a63d2',pants:'#2f3558',talk:1,hd:1.1,tip:'Sinta · Marketing|Berdiskusi soal kampanye',
+arms:(sy,k)=>armTo(-9,sy,-17,sy+9,'#8a63d2','talk',.55,k)+armTo(9,sy,8,sy+13,'#8a63d2','',0,k),
+extra:say('sinta',10,-62)}));
+s+=`<g id="objs">${O.sort((a,b)=>a[0]-b[0]).map(o=>o[1]).join('')}</g>`;
+s+=`<g id="par"></g>`;
+s+=person({id:'walker',cls:'opt',xy:[0,0],both:1,hair:'#2a2236',skin:'#c68f64',shirt:'#2f9a92',pants:'#3b4468',tip:'Eko · Admin|Mengantar dokumen antar meja',extra:say('eko',10,-62),
+arms:(sy,k)=>armTo(-9,sy,-10,sy+15,'#2f9a92','s1',0,k)+armTo(9,sy,10,sy+15,'#2f9a92','s2',0,k)+`<rect x="9" y="${sy+10}" width="8" height="10" rx="1.5" fill="#fff" stroke="#c9c3e8"/>`});
+svg.innerHTML=s;
+
+/* ---------- decorative motion ---------- */
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches,wk=document.getElementById('walker');
+const A=[4.1,3.4],B=[3.0,8.0];
+function place(f,dir,moving){const[X,Y]=P(A[0]+(B[0]-A[0])*f,A[1]+(B[1]-A[1])*f,0);wk.setAttribute('transform',`translate(${X.toFixed(1)},${Y.toFixed(1)})`);wk.classList.toggle('walking',moving);wk.classList.toggle('away',dir<0)}
+if(RM)place(.5,1,false);else{let t0;(function fr(ts){t0=t0||ts;const u=((ts-t0)/1000)%12;let f,d,m=true;
+if(u<5){f=u/5;d=1}else if(u<6){f=1;d=1;m=false}else if(u<11){f=1-(u-6)/5;d=-1}else{f=0;d=-1;m=false}
+place(f,d,m);requestAnimationFrame(fr)})(performance.now())}
+/* kalimat bergantian */
+document.querySelectorAll('.say').forEach((g,n)=>{const T=KALIMAT[g.dataset.say]||[],tx=g.querySelector('text'),rc=g.querySelector('rect'),tl=g.querySelector('.tail');let i=0;
+ const show=()=>{tx.textContent=T[i%T.length];let w=0;try{w=tx.getComputedTextLength()}catch(e){}w=(w||60)+16;rc.setAttribute('x',-w/2);rc.setAttribute('y',-9);rc.setAttribute('width',w);rc.setAttribute('height',16);rc.setAttribute('rx',8);tl.setAttribute('d','M-4 7l-2 5 8-5z')};
+ if(!T.length)return;show();if(RM){g.style.opacity=1;return}
+ const loop=()=>{show();g.style.opacity=1;setTimeout(()=>{g.style.opacity=0;i++;setTimeout(loop,500)},JEDA-900)};
+ setTimeout(loop,600+n*1100)});
+/* tooltip */
+const tip=document.getElementById('tip'),stage=document.getElementById('stage');
+function showTip(e){const g=e.target.closest&&e.target.closest('[data-tip]');if(!g){tip.style.opacity=0;return}
+const[a,b]=g.dataset.tip.split('|'),r=g.getBoundingClientRect(),sr=stage.getBoundingClientRect();
+tip.innerHTML=`<b>${a}</b><span>${b}</span>`;tip.style.left=(r.left+r.width/2-sr.left)+'px';tip.style.top=(r.top-sr.top)+'px';tip.style.opacity=1}
+svg.addEventListener('pointerover',showTip);svg.addEventListener('pointerdown',showTip);svg.addEventListener('pointerleave',()=>tip.style.opacity=0);
+/* parallax (visual only) */
+let mx=0,my=0;const bg=document.getElementById('bg');
+function par(){if(RM)return;const sc=scrollY*-.04;svg.style.transform=`translate(${mx*10}px,${my*6+sc}px)`;bg.style.transform=`translate(${-mx*18}px,${-my*10}px)`}
+if(!RM){addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5;par()});addEventListener('scroll',par,{passive:true})}
+/* mobile crop */
+const mq=matchMedia('(max-width:640px)');const vb=()=>svg.setAttribute('viewBox',mq.matches?'130 10 760 640':'60 0 900 650');vb();mq.addEventListener('change',vb);
+</script></body></html>
