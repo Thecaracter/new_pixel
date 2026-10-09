@@ -12,7 +12,41 @@ export function ChatPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const [selectedModel, setSelectedModel] = useState(null);
+  const [availableModels, setAvailableModels] = useState([]);
+  const [currentModel, setCurrentModel] = useState(null);
+  const [modelsLoading, setModelsLoading] = useState(true);
+  const [modelsError, setModelsError] = useState(null);
   const messagesEndRef = useRef(null);
+
+  // Fetch available models on mount
+  React.useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        setModelsLoading(true);
+        const response = await fetch('/api/models');
+        if (!response.ok) {
+          throw new Error('Failed to fetch models');
+        }
+        const data = await response.json();
+        setAvailableModels(data.models || []);
+        setCurrentModel(data.currentModel);
+        // Set selected model to current or first available
+        setSelectedModel(data.currentModel || data.defaultModel);
+        setModelsError(null);
+      } catch (err) {
+        console.error('Error fetching models:', err);
+        setModelsError('Could not load available models');
+        // Set a default if available
+        setAvailableModels([]);
+        setModelsLoading(false);
+      } finally {
+        setModelsLoading(false);
+      }
+    };
+
+    fetchModels();
+  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   React.useEffect(() => {
@@ -34,7 +68,7 @@ export function ChatPanel() {
     setLoading(true);
 
     try {
-      // Call backend endpoint with current session ID
+      // Call backend endpoint with current session ID and model
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -43,6 +77,7 @@ export function ChatPanel() {
         body: JSON.stringify({
           message: trimmedInput,
           sessionId: sessionId,
+          model: selectedModel,
         }),
       });
 
@@ -56,6 +91,11 @@ export function ChatPanel() {
       // Update session ID for continuity
       if (data.sessionId) {
         setSessionId(data.sessionId);
+      }
+      
+      // Update current model if server reports one
+      if (data.model) {
+        setCurrentModel(data.model);
       }
       
       // Add assistant message
@@ -94,6 +134,46 @@ export function ChatPanel() {
   return (
     <section className="chat-panel">
       <div className="chat-container">
+        {/* Model selector */}
+        <div className="chat-model-selector">
+          <label htmlFor="model-select" className="chat-model-label">
+            Model:
+          </label>
+          <div className="chat-model-wrapper">
+            {modelsLoading ? (
+              <div className="chat-model-loading">Loading models...</div>
+            ) : modelsError ? (
+              <div className="chat-model-error" title={modelsError}>
+                {modelsError}
+              </div>
+            ) : availableModels.length > 0 ? (
+              <>
+                <select
+                  id="model-select"
+                  className="chat-model-select"
+                  value={selectedModel || ''}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  disabled={loading}
+                  aria-label="Select AI model"
+                >
+                  {availableModels.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+                {currentModel && currentModel !== selectedModel && (
+                  <small className="chat-model-info">
+                    (current: {currentModel})
+                  </small>
+                )}
+              </>
+            ) : (
+              <div className="chat-model-error">No models available</div>
+            )}
+          </div>
+        </div>
+
         {/* Messages area */}
         <div className="chat-messages" role="log" aria-live="polite" aria-label="Chat messages">
           {isEmpty && (

@@ -97,28 +97,59 @@ server.js                         # Express backend for OpenCode chat proxy
 
 ### How It Works
 
-1. **User sends message** in the chat panel
-2. **Frontend calls** `POST /api/chat` with the message and optional session ID
-3. **Backend proxy** executes `opencode run --format json --session [sessionId] [message]` via child process
-4. **OpenCode** sends the prompt to your configured AI provider (e.g., 9router)
-5. **Backend parses** the JSON output to extract the session ID and text response
-6. **Response returned** to frontend and displayed in the chat
-7. **Session ID persisted** in ChatPanel state for subsequent message continuity
+1. **User selects model** from the model dropdown in the chat panel
+2. **User sends message** in the chat panel
+3. **Frontend calls** `POST /api/chat` with the message, optional session ID, and selected model
+4. **Backend proxy** executes `opencode run --format json --model provider/model --session [sessionId] [message]` via child process
+5. **OpenCode** sends the prompt using the selected model to your configured AI provider
+6. **Backend parses** the JSON output to extract the session ID and text response
+7. **Response returned** to frontend and displayed in the chat
+8. **Session ID persisted** in ChatPanel state for subsequent message continuity
+9. **Model persists** until changed by the user
 
-### Session Continuity
+### Model Selection
 
-The integration supports persistent sessions across multiple messages:
-- **First message**: Creates a new OpenCode session (no `--session` flag needed)
-- **Subsequent messages**: Include the session ID via `--session <sessionId>` flag
-- **Session ID parsing**: Extracted from the first JSON event in OpenCode's output (`event.sessionID`)
-- **Session tracking**: Stored in ChatPanel component state, sent in request body, and updated with each response
+The chat panel displays a dropdown selector with available models. Models are configured via:
 
-Verified with OpenCode CLI 1.18.31:
-- ✅ `opencode run --help` confirms `--session` flag support
-- ✅ `--format json` outputs structured events with `sessionID` field on every event
-- ✅ Session continuity tested: same session ID maintained across multiple API calls
+1. **Environment variable** `OPENCODE_MODELS` (comma-separated list):
+   ```bash
+   OPENCODE_MODELS="9router/claude-opus-4-1-latest,9router/claude-sonnet-4-20250514" npm run dev
+   ```
+
+2. **Default models** (if env var not set):
+   - `9router/claude-haiku-4.5-thinking-agentic`
+   - `9router/claude-opus-4-1-latest`
+   - `9router/claude-sonnet-4-20250514`
+
+The backend exposes available models via the `/api/models` endpoint, which the frontend fetches on load.
+
+### Session Continuity and Model Changes
+
+- **Same model**: Session ID is preserved and reused across messages
+- **Different model**: Session is automatically reset when you change the model to ensure no incompatible context mixing
+  - The backend logs: `Model changed from X to Y, resetting session`
+  - A new session starts with the next message using the new model
+
+The response always includes:
+- `reply`: The text response from OpenCode
+- `sessionId`: Current session ID for use in subsequent requests
+- `model`: The model that processed the request
 
 ### Backend API
+
+**GET /api/models**
+
+Response:
+```json
+{
+  "models": [
+    "9router/claude-haiku-4.5-thinking-agentic",
+    "9router/claude-opus-4-1-latest"
+  ],
+  "defaultModel": "9router/claude-haiku-4.5-thinking-agentic",
+  "currentModel": "9router/claude-opus-4-1-latest"
+}
+```
 
 **POST /api/chat**
 
@@ -126,7 +157,8 @@ Request:
 ```json
 {
   "message": "What files are in this project?",
-  "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4"
+  "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4",
+  "model": "9router/claude-opus-4-1-latest"
 }
 ```
 
@@ -134,7 +166,8 @@ Response (success):
 ```json
 {
   "reply": "The project contains the following files...",
-  "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4"
+  "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4",
+  "model": "9router/claude-opus-4-1-latest"
 }
 ```
 
@@ -146,7 +179,27 @@ Response (error):
 }
 ```
 
-**Note**: The `sessionId` field is optional in the request. If omitted, a new session is created. The response always includes the session ID for use in subsequent requests.
+**Notes**:
+- The `sessionId` and `model` fields are optional in the request
+- If `sessionId` is omitted, a new session is created
+- If `model` is omitted, the currently selected model is used
+- The response always includes both fields for tracking
+
+### Session Continuity
+
+The integration supports persistent sessions across multiple messages:
+- **First message**: Creates a new OpenCode session (no `--session` flag needed)
+- **Subsequent messages**: Include the session ID via `--session <sessionId>` flag
+- **Session ID parsing**: Extracted from the first JSON event in OpenCode's output (`event.sessionID`)
+- **Session tracking**: Stored in ChatPanel component state, sent in request body, and updated with each response
+- **Model changes**: Automatically reset session to prevent context mixing
+
+Verified with OpenCode CLI 1.18.31:
+- ✅ `opencode run --help` confirms `--session` flag support
+- ✅ `--format json` outputs structured events with `sessionID` field on every event
+- ✅ `-m, --model provider/model` flag for model selection
+- ✅ Session continuity tested: same session ID maintained across multiple API calls
+- ✅ Model switching tested: session resets when model changes
 
 ### Environment Variables
 
@@ -170,6 +223,18 @@ BACKEND_PORT=3000 npm run dev
 
 ## Troubleshooting
 
+### Chat shows "Could not load available models"
+
+1. **Check backend is running**: Backend should print to console on startup
+2. **Verify `/api/models` endpoint**: Open `http://127.0.0.1:3001/api/models` in your browser
+3. **Check server logs** for errors during model discovery
+
+### Model selector shows "No models available"
+
+- Verify the `OPENCODE_MODELS` environment variable is set correctly if using custom models
+- Fall back to defaults: check that the default models in `server.js` are accessible
+- Run `opencode run "hello" --model 9router/claude-haiku-4.5-thinking-agentic` to test a specific model
+
 ### Chat shows "OpenCode service unavailable"
 
 1. **Check OpenCode is installed**: `opencode --version`
@@ -183,9 +248,15 @@ BACKEND_PORT=3000 npm run dev
 - Install globally: `npm install -g opencode`
 - Or update your PATH to include the OpenCode binary location
 
+### Model changes but chat still uses old model
+
+- Session is automatically reset when you change models; the next message uses the new model
+- Check browser console for errors during model selection
+- Verify the response includes the correct model in the `model` field
+
 ### Build succeeds but chat doesn't work in production
 
-- The `/api/chat` endpoint is only available during development via the proxy
+- The `/api/chat` and `/api/models` endpoints are only available during development via the proxy
 - For production deployment, you would need to run the Express backend as a separate service
 - Or build a production-ready backend integration (not covered in this setup)
 
