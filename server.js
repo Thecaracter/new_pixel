@@ -33,16 +33,46 @@ try {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Store active session ID across requests
+// Store active session ID and model across requests
 let currentSessionId = null;
+let currentModel = null;
+
+// Available models: can be configured via OPENCODE_MODELS env var (comma-separated)
+// Format: "provider/model,provider/model" or use defaults
+function getAvailableModels() {
+  const envModels = process.env.OPENCODE_MODELS;
+  if (envModels) {
+    return envModels.split(',').map(m => m.trim()).filter(m => m);
+  }
+  // Default models (common providers)
+  return [
+    '9router/claude-haiku-4.5-thinking-agentic',
+    '9router/claude-opus-4-1-latest',
+    '9router/claude-sonnet-4-20250514'
+  ];
+}
+
+/**
+ * GET /api/models
+ * Returns available models for selection
+ * Returns: { models: string[], defaultModel: string|null, currentModel: string|null }
+ */
+app.get('/api/models', (req, res) => {
+  const availableModels = getAvailableModels();
+  res.json({
+    models: availableModels,
+    defaultModel: availableModels[0] || null,
+    currentModel: currentModel || availableModels[0] || null
+  });
+});
 
 /**
  * POST /api/chat
- * Accepts: { message: string, sessionId?: string }
- * Returns: { reply: string, sessionId: string } or { error: string, details: string }
+ * Accepts: { message: string, sessionId?: string, model?: string }
+ * Returns: { reply: string, sessionId: string, model: string } or { error: string, details: string }
  */
 app.post('/api/chat', async (req, res) => {
-  const { message, sessionId } = req.body;
+  const { message, sessionId, model } = req.body;
 
   // Validate input
   if (!message || typeof message !== 'string' || !message.trim()) {
@@ -53,11 +83,37 @@ app.post('/api/chat', async (req, res) => {
   }
 
   const trimmedMessage = message.trim();
-  let nextSessionId = sessionId || currentSessionId;
+  
+  // Validate and sanitize model selection
+  let selectedModel = model || currentModel;
+  if (selectedModel) {
+    // Validate model format: should be provider/model
+    if (!/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/.test(selectedModel)) {
+      return res.status(400).json({
+        error: 'Invalid model',
+        details: 'model must be in format provider/model'
+      });
+    }
+  }
+  
+  // When model changes, reset session to avoid incompatibility
+  let nextSessionId = sessionId;
+  if (selectedModel && selectedModel !== currentModel) {
+    console.log(`Model changed from ${currentModel} to ${selectedModel}, resetting session`);
+    nextSessionId = null;
+    currentModel = selectedModel;
+  } else {
+    nextSessionId = sessionId || currentSessionId;
+  }
 
   try {
     // Build opencode command with JSON format for structured output
     const args = ['run', '--format', 'json'];
+    
+    // Add model if specified
+    if (selectedModel) {
+      args.push('--model', selectedModel);
+    }
     
     if (nextSessionId) {
       args.push('--session', nextSessionId);
@@ -69,15 +125,20 @@ app.post('/api/chat', async (req, res) => {
     // Execute opencode run
     const result = await executeOpencode(args);
 
-    // Update session tracking
+    // Update session and model tracking
     if (result.sessionId) {
       nextSessionId = result.sessionId;
       currentSessionId = result.sessionId;
     }
+    
+    if (!currentModel && selectedModel) {
+      currentModel = selectedModel;
+    }
 
     res.json({
       reply: result.output,
-      sessionId: nextSessionId || null
+      sessionId: nextSessionId || null,
+      model: selectedModel || currentModel || null
     });
   } catch (error) {
     console.error('OpenCode execution error:', error);
