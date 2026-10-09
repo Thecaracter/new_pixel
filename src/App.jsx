@@ -39,12 +39,17 @@ export default function App() {
 
   // Walker animation
   useEffect(() => {
-    if (prefersReducedMotion || !walkerRef.current) return;
+    if (prefersReducedMotion) return;
+
+    const walkerElement = document.getElementById('walker');
+    if (!walkerElement) return;
 
     const A = [4.1, 3.4];
     const B = [3.0, 8.0];
 
     let t0;
+    let animFrameId;
+
     const fr = (ts) => {
       t0 = t0 || ts;
       const u = ((ts - t0) / 1000) % 12;
@@ -66,16 +71,30 @@ export default function App() {
         m = false;
       }
 
-      setWalkerPos([
-        A[0] + (B[0] - A[0]) * f,
-        A[1] + (B[1] - A[1]) * f,
-      ]);
+      const newX = A[0] + (B[0] - A[0]) * f;
+      const newY = A[1] + (B[1] - A[1]) * f;
+
+      setWalkerPos([newX, newY]);
       setWalkerDir(d);
       setWalkerMoving(m);
-      requestAnimationFrame(fr);
+
+      // Apply transform to walker element
+      walkerElement.setAttribute(
+        'transform',
+        `translate(${newX * 100} ${newY * 100})${d === -1 ? ' scale(-1 1)' : ''}`
+      );
+
+      animFrameId = requestAnimationFrame(fr);
     };
 
-    requestAnimationFrame(fr);
+    animFrameId = requestAnimationFrame(fr);
+
+    // Cleanup function to cancel animation frame
+    return () => {
+      if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+      }
+    };
   }, [prefersReducedMotion]);
 
   // Tooltip interaction
