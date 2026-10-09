@@ -98,10 +98,25 @@ server.js                         # Express backend for OpenCode chat proxy
 ### How It Works
 
 1. **User sends message** in the chat panel
-2. **Frontend calls** `POST /api/chat` with the message
-3. **Backend proxy** executes `opencode run [message]` via child process
+2. **Frontend calls** `POST /api/chat` with the message and optional session ID
+3. **Backend proxy** executes `opencode run --format json --session [sessionId] [message]` via child process
 4. **OpenCode** sends the prompt to your configured AI provider (e.g., 9router)
-5. **Response returned** to frontend and displayed in the chat
+5. **Backend parses** the JSON output to extract the session ID and text response
+6. **Response returned** to frontend and displayed in the chat
+7. **Session ID persisted** in ChatPanel state for subsequent message continuity
+
+### Session Continuity
+
+The integration supports persistent sessions across multiple messages:
+- **First message**: Creates a new OpenCode session (no `--session` flag needed)
+- **Subsequent messages**: Include the session ID via `--session <sessionId>` flag
+- **Session ID parsing**: Extracted from the first JSON event in OpenCode's output (`event.sessionID`)
+- **Session tracking**: Stored in ChatPanel component state, sent in request body, and updated with each response
+
+Verified with OpenCode CLI 1.18.31:
+- ✅ `opencode run --help` confirms `--session` flag support
+- ✅ `--format json` outputs structured events with `sessionID` field on every event
+- ✅ Session continuity tested: same session ID maintained across multiple API calls
 
 ### Backend API
 
@@ -111,7 +126,7 @@ Request:
 ```json
 {
   "message": "What files are in this project?",
-  "sessionId": null
+  "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4"
 }
 ```
 
@@ -119,7 +134,7 @@ Response (success):
 ```json
 {
   "reply": "The project contains the following files...",
-  "sessionId": "abc123"
+  "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4"
 }
 ```
 
@@ -130,6 +145,8 @@ Response (error):
   "details": "Failed to start OpenCode: command not found"
 }
 ```
+
+**Note**: The `sessionId` field is optional in the request. If omitted, a new session is created. The response always includes the session ID for use in subsequent requests.
 
 ### Environment Variables
 
@@ -148,6 +165,8 @@ BACKEND_PORT=3000 npm run dev
 - **SVG**: Procedurally generated isometric primitives (no external images)
 - **Animation**: CSS keyframes + React state for dynamic positioning
 - **Backend**: Express.js with child_process integration to OpenCode CLI
+- **Cross-platform support**: Windows PATH detection via `where` command, fallback to PATH lookup on Unix
+- **Session management**: OpenCode session IDs tracked via JSON output parsing (`--format json`)
 
 ## Troubleshooting
 

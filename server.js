@@ -2,9 +2,32 @@ import express from 'express';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
+
+// Find opencode executable path
+let OPENCODE_BIN = 'opencode';
+try {
+  // Try to find opencode in PATH using the shell (cross-platform)
+  let result = execSync(process.platform === 'win32' ? 'where opencode' : 'which opencode', {
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'ignore']
+  }).trim();
+  if (result) {
+    // Clean up line endings and take first result
+    result = result.split(/[\r\n]+/)[0];
+    // On Windows, prefer .cmd over plain executable for Node spawn
+    if (process.platform === 'win32' && !result.endsWith('.cmd')) {
+      result = result + '.cmd';
+    }
+    OPENCODE_BIN = result;
+    console.log(`Found OpenCode at: ${OPENCODE_BIN}`);
+  }
+} catch (e) {
+  console.warn('Warning: Could not locate opencode executable, will try using PATH lookup');
+}
 
 // Middleware
 app.use(express.json());
@@ -33,9 +56,8 @@ app.post('/api/chat', async (req, res) => {
   let nextSessionId = sessionId || currentSessionId;
 
   try {
-    // Build opencode command
-    // Use --session to continue an existing session if available
-    const args = ['run'];
+    // Build opencode command with JSON format for structured output
+    const args = ['run', '--format', 'json'];
     
     if (nextSessionId) {
       args.push('--session', nextSessionId);
@@ -68,6 +90,7 @@ app.post('/api/chat', async (req, res) => {
 
 /**
  * Execute opencode run command and capture output
+ * Expects JSON format output with sessionID and text events
  * @param {string[]} args - Arguments to pass to opencode
  * @returns {Promise<{output: string, sessionId: string|null}>}
  */
@@ -75,11 +98,14 @@ function executeOpencode(args) {
   return new Promise((resolve, reject) => {
     let stdout = '';
     let stderr = '';
+    let sessionId = null;
+    let textContent = [];
 
-    const child = spawn('opencode', args, {
+    // Use shell: true to handle PATH resolution on all platforms
+    const child = spawn(OPENCODE_BIN, args, {
       cwd: __dirname,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: process.platform === 'win32'
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: true,
     });
 
     child.stdout.on('data', (data) => {
@@ -102,12 +128,36 @@ function executeOpencode(args) {
       if (code !== 0) {
         reject(new Error(`OpenCode failed with code ${code}: ${stderr}`));
       } else {
-        // Parse opencode output to extract session ID if available
-        // For now, we'll just return the combined stdout
-        const output = stdout.trim() || stderr.trim() || 'No response from OpenCode';
+        if (!stdout.trim()) {
+          reject(new Error('OpenCode returned empty response'));
+          return;
+        }
+
+        // Parse JSON lines from stdout
+        const lines = stdout.trim().split('\n');
+        for (const line of lines) {
+          try {
+            const event = JSON.parse(line);
+            
+            // Extract session ID from first event
+            if (!sessionId && event.sessionID) {
+              sessionId = event.sessionID;
+            }
+            
+            // Extract text content
+            if (event.type === 'text' && event.part && event.part.text) {
+              textContent.push(event.part.text);
+            }
+          } catch (e) {
+            // Skip non-JSON lines (shouldn't happen with --format json)
+            console.debug('Failed to parse JSON line:', line);
+          }
+        }
+
+        const output = textContent.join('\n') || 'No text response from OpenCode';
         resolve({
           output,
-          sessionId: currentSessionId
+          sessionId
         });
       }
     });

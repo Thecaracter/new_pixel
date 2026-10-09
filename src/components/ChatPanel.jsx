@@ -11,6 +11,7 @@ export function ChatPanel() {
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -33,7 +34,7 @@ export function ChatPanel() {
     setLoading(true);
 
     try {
-      // Call backend endpoint
+      // Call backend endpoint with current session ID
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -41,6 +42,7 @@ export function ChatPanel() {
         },
         body: JSON.stringify({
           message: trimmedInput,
+          sessionId: sessionId,
         }),
       });
 
@@ -50,6 +52,11 @@ export function ChatPanel() {
       }
 
       const data = await response.json();
+      
+      // Update session ID for continuity
+      if (data.sessionId) {
+        setSessionId(data.sessionId);
+      }
       
       // Add assistant message
       setMessages(prev => [...prev, { 
