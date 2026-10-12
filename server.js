@@ -33,9 +33,15 @@ try {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Store active session ID and model across requests
-let currentSessionId = null;
+// Store active session IDs and model across requests (isolated per mode)
+let currentChatSessionId = null;
+let currentLeaderSessionId = null;
 let currentModel = null;
+
+export function resetSessions() {
+  currentChatSessionId = null;
+  currentLeaderSessionId = null;
+}
 
 /**
  * Team members available in the virtual office
@@ -55,15 +61,23 @@ export const TEAM_MEMBERS = [
  */
 export const LEADER_SYSTEM_PROMPT = `Anda adalah Arif, Project Lead di Pixel Works Virtual Office.
 Tugas utama Anda adalah menjadi Koordinator Tim yang bertanggung jawab, teliti, realistis, dan anti-halusinasi.
+Selalu bertindak dan menjawab sebagai Arif (Project Lead), BUKAN sebagai OpenCode, model AI umum, atau asisten generik.
 
 ATURAN UTAMA:
 1. JANGAN PERNAH MENGARANG ATAU MENGASUMSIKAN DETAIL yang belum diberikan oleh user.
 2. JANGAN PERNAH MENGEKSEKUSI TUGAS ATAU MEMANGGIL AGENT LAIN SECARA OTOMATIS.
 3. JANGAN PERNAH MENGKLAIM BAHWA TUGAS SUDAH DIJALANKAN ATAU SELESAI DIEKSEKUSI.
-4. Jika user mengajukan ide, project, atau permintaan:
-   - Evaluasi apakah informasi project sudah lengkap (Tujuan/Goal, Scope/Ruang Lingkup, Deliverables/Output, Batasan/Tech Stack/Deadline).
-   - JIKA BELUM CUKUP LENGKAP: Masuk fase "clarifying". Tanyakan poin-poin yang belum jelas secara spesifik (tujuan, batasan, target output, dsb). JANGAN membuat rencana final dulu.
-   - JIKA SUDAH CUKUP LENGKAP: Masuk fase "planned" atau "awaiting_confirmation". Buat rencana kerja terstruktur dan pecah menjadi tugas-tugas spesifik untuk anggota tim yang relevan (Arif, Rina, Dimas, Bayu, Sinta, Mira, Eko). Minta konfirmasi eksplisit dari user sebelum ada langkah eksekusi apapun.
+4. JANGAN PERNAH MENOLAK IDENTITAS ANDA SEBAGAI ARIF. Dilarang merespons dengan kata-kata seperti "Saya opencode, bukan Arif". Anda adalah Arif.
+5. PENGENALAN ROSTER TIM:
+   - Kenali seluruh anggota tim yang ada di daftar ANGGOTA TIM YANG TERSEDIA di bawah.
+   - Sinta adalah anggota tim yang bertanggung jawab atas Marketing / Growth (campaign promosi, go-to-market, copywriting).
+   - Dimas adalah UI/UX Designer, Bayu adalah Frontend Engineer, Rina adalah Finance, Mira adalah Sales, Eko adalah Ops/Admin.
+   - Jika user meminta menugaskan Sinta (contoh: "Arif, tugaskan Sinta untuk membuat campaign login"), akuilah Sinta sebagai anggota tim yang valid.
+6. ALUR KOORDINASI:
+   - Jika user mengajukan ide, project, atau permintaan/penugasan:
+     - Evaluasi apakah informasi project sudah lengkap (Tujuan/Goal, Scope/Ruang Lingkup, Deliverables/Output, Batasan/Tech Stack/Deadline).
+     - JIKA BELUM CUKUP LENGKAP: Masuk fase "clarifying". Tanyakan poin-poin yang belum jelas secara spesifik (tujuan, batasan, target output, dsb). JANGAN membuat rencana final dulu.
+     - JIKA SUDAH CUKUP LENGKAP: Masuk fase "planned" atau "awaiting_confirmation". Buat rencana kerja terstruktur dan pecah menjadi tugas-tugas spesifik untuk anggota tim yang relevan (Arif, Rina, Dimas, Bayu, Sinta, Mira, Eko). Minta konfirmasi eksplisit dari user sebelum ada langkah eksekusi apapun.
 
 ANGGOTA TIM YANG TERSEDIA:
 - Arif (Project Lead / Coordinator): koordinasi, requirement, breakdown
@@ -77,7 +91,7 @@ ANGGOTA TIM YANG TERSEDIA:
 FORMAT OUTPUT HARUS JSON VALID DALAM BLOK KODE \`\`\`json ... \`\`\` ATAU RAW JSON DENGAN STRUKTUR:
 {
   "phase": "clarifying" | "planned" | "awaiting_confirmation",
-  "summary": "Ringkasan status koordinasi dalam 1-3 kalimat ramah profesional",
+  "summary": "Ringkasan status koordinasi dari Arif dalam 1-3 kalimat ramah profesional",
   "questions": [
     "Pertanyaan klarifikasi 1 (jika fase clarifying)"
   ],
@@ -143,9 +157,14 @@ export function extractStructuredJson(rawText) {
 export function normalizeLeaderResponse(parsed, rawReply) {
   if (!parsed || typeof parsed !== 'object') {
     // Fallback when LLM failed to return structured JSON
+    let fallbackSummary = (rawReply || '').trim();
+    if (!fallbackSummary || fallbackSummary.toLowerCase().includes('opencode')) {
+      fallbackSummary = 'Sebagai Arif (Project Lead), saya menerima arahan Anda. Mari kita diskusikan dan klarifikasi kebutuhan project ini bersama tim.';
+    }
+
     return {
       phase: 'clarifying',
-      summary: rawReply || 'Perlu klarifikasi lebih lanjut mengenai detail project.',
+      summary: fallbackSummary,
       questions: [
         'Bisakah Anda menjelaskan tujuan utama dan hasil akhir yang diharapkan dari project ini?',
         'Siapa target pengguna dan apa saja batasan (waktu/teknologi) yang perlu diperhatikan?'
@@ -178,14 +197,21 @@ export function normalizeLeaderResponse(parsed, rawReply) {
   let plan = null;
   if (parsed.plan && typeof parsed.plan === 'object') {
     const rawTasks = Array.isArray(parsed.plan.tasks) ? parsed.plan.tasks : [];
-    const tasks = rawTasks.map((t, idx) => ({
-      id: t.id || `TASK-${idx + 1}`,
-      title: t.title || `Tugas ${idx + 1}`,
-      assignee: t.assignee || 'Arif',
-      role: t.role || 'Team Member',
-      description: t.description || '',
-      status: 'pending' // Enforce pending - MVP never auto-executes
-    }));
+    const tasks = rawTasks.map((t, idx) => {
+      const rawAssignee = (t.assignee || '').trim();
+      const matchedMember = TEAM_MEMBERS.find(
+        m => m.name.toLowerCase() === rawAssignee.toLowerCase() ||
+             m.id.toLowerCase() === rawAssignee.toLowerCase()
+      );
+      return {
+        id: t.id || `TASK-${idx + 1}`,
+        title: t.title || `Tugas ${idx + 1}`,
+        assignee: matchedMember ? matchedMember.name : (rawAssignee || 'Arif'),
+        role: matchedMember ? matchedMember.role : (t.role || 'Team Member'),
+        description: t.description || '',
+        status: 'pending' // Enforce pending - MVP never auto-executes
+      };
+    });
 
     plan = {
       title: parsed.plan.title || 'Rencana Proyek',
@@ -349,9 +375,18 @@ app.post('/api/chat', async (req, res) => {
   if (selectedModel && selectedModel !== currentModel) {
     console.log(`Model changed from ${currentModel} to ${selectedModel}, resetting session`);
     nextSessionId = null;
+    currentChatSessionId = null;
+    currentLeaderSessionId = null;
     currentModel = selectedModel;
   } else {
-    nextSessionId = sessionId || currentSessionId;
+    // Isolate sessions by mode and honor explicit null for fresh session
+    if (sessionId !== undefined && sessionId !== null) {
+      nextSessionId = sessionId;
+    } else if (sessionId === null) {
+      nextSessionId = null;
+    } else {
+      nextSessionId = isLeaderMode ? currentLeaderSessionId : currentChatSessionId;
+    }
   }
 
   try {
@@ -386,7 +421,11 @@ app.post('/api/chat', async (req, res) => {
     // Update session and model tracking
     if (result.sessionId) {
       nextSessionId = result.sessionId;
-      currentSessionId = result.sessionId;
+      if (isLeaderMode) {
+        currentLeaderSessionId = result.sessionId;
+      } else {
+        currentChatSessionId = result.sessionId;
+      }
     }
     
     if (!currentModel && selectedModel) {
@@ -419,7 +458,8 @@ app.post('/api/chat', async (req, res) => {
       questions: normalized.questions,
       plan: normalized.plan,
       confirmation_prompt: normalized.confirmation_prompt,
-      valid: normalized.valid
+      valid: normalized.valid,
+      roster: TEAM_MEMBERS
     };
 
     // Only expose raw output for debugging in non-production environments
@@ -521,6 +561,11 @@ function executeOpencode(args) {
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Team roster endpoint
+app.get('/api/team', (req, res) => {
+  res.json({ members: TEAM_MEMBERS });
 });
 
 // 404 fallback for SPA

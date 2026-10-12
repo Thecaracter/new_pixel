@@ -8,18 +8,24 @@ import {
 } from './server.js';
 
 describe('Leader Coordination Contract Unit Tests', () => {
-  it('should expose team members list including Arif', () => {
+  it('should expose team members list including Arif and Sinta', () => {
     assert(Array.isArray(TEAM_MEMBERS), 'TEAM_MEMBERS should be an array');
     const arif = TEAM_MEMBERS.find(m => m.id === 'arif');
     assert(arif, 'Arif must exist in team members');
     assert.strictEqual(arif.name, 'Arif');
+    const sinta = TEAM_MEMBERS.find(m => m.id === 'sinta');
+    assert(sinta, 'Sinta must exist in team members');
+    assert.strictEqual(sinta.name, 'Sinta');
+    assert(sinta.role.includes('Marketing'), 'Sinta must be Marketing / Growth');
   });
 
-  it('should have a well-formed LEADER_SYSTEM_PROMPT prohibiting hallucination and auto-execution', () => {
+  it('should have a well-formed LEADER_SYSTEM_PROMPT prohibiting hallucination, auto-execution, and maintaining Arif persona', () => {
     assert(LEADER_SYSTEM_PROMPT.includes('JANGAN PERNAH MENGARANG'), 'Must prohibit hallucination');
     assert(LEADER_SYSTEM_PROMPT.includes('JANGAN PERNAH MENGEKSEKUSI TUGAS'), 'Must prohibit auto-execution');
     assert(LEADER_SYSTEM_PROMPT.includes('clarifying'), 'Must mention clarifying phase');
     assert(LEADER_SYSTEM_PROMPT.includes('awaiting_confirmation'), 'Must mention awaiting_confirmation phase');
+    assert(LEADER_SYSTEM_PROMPT.includes('Sinta'), 'Must mention Sinta in roster context');
+    assert(LEADER_SYSTEM_PROMPT.includes('PENGENALAN ROSTER TIM'), 'Must instruct roster awareness');
   });
 
   describe('extractStructuredJson', () => {
@@ -111,7 +117,7 @@ describe('Leader Coordination Contract Unit Tests', () => {
       assert.strictEqual(normalized.valid, true);
     });
 
-    it('gracefully falls back when output is malformed/unparseable', () => {
+    it('gracefully falls back when output is malformed/unparseable and preserves Arif persona', () => {
       const rawReply = 'Maaf ada kendala format tapi saya sarankan kita bicarakan fiturnya dulu.';
       const normalized = normalizeLeaderResponse(null, rawReply);
 
@@ -121,6 +127,38 @@ describe('Leader Coordination Contract Unit Tests', () => {
       assert(normalized.questions.length > 0);
       assert.strictEqual(normalized.plan, null);
       assert.strictEqual(normalized.confirmation_prompt, null);
+
+      // Persona protection: if raw text includes "opencode", fallback overrides to Arif persona
+      const opencodeRaw = 'Saya opencode, bukan Arif. Saya tidak bisa membagi tugas.';
+      const protectedNorm = normalizeLeaderResponse(null, opencodeRaw);
+      assert(!protectedNorm.summary.includes('opencode'));
+      assert(protectedNorm.summary.includes('Arif'));
+    });
+
+    it('validates and maps team roster assignees such as Sinta in plan tasks', () => {
+      const parsed = {
+        phase: 'planned',
+        summary: 'Rencana campaign login sudah siap bersama Sinta.',
+        plan: {
+          title: 'Login Campaign Launch',
+          goal: 'Peluncuran kampanye login baru',
+          scope: 'Materi promosi dan copywriting',
+          tasks: [
+            {
+              id: 'TASK-1',
+              title: 'Buat Copywriting & Konten Campaign',
+              assignee: 'sinta', // lowercase
+              description: 'Menyusun copy dan materi promosi'
+            }
+          ]
+        },
+        confirmation_prompt: 'Apakah rencana ini disetujui?'
+      };
+
+      const normalized = normalizeLeaderResponse(parsed, 'raw');
+      assert.strictEqual(normalized.plan.tasks[0].assignee, 'Sinta');
+      assert.strictEqual(normalized.plan.tasks[0].role, 'Marketing / Growth');
+      assert.strictEqual(normalized.plan.tasks[0].status, 'pending');
     });
   });
 
