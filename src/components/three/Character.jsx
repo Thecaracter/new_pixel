@@ -2,6 +2,17 @@ import React, { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
+import {
+  CHARACTER_DIMENSIONS,
+  getCharacterBaselines,
+  CHARACTER_ANIMATION_PRESETS,
+} from './characterAnimations';
+
+export {
+  CHARACTER_DIMENSIONS,
+  getCharacterBaselines,
+  CHARACTER_ANIMATION_PRESETS,
+};
 
 /**
  * 3D Low-poly Stylized Character Component
@@ -20,6 +31,7 @@ export const Character = React.memo(function Character({
   longHair = false,
   name,
   tip,
+  prefersReducedMotion = null,
 }) {
   const rootRef = useRef();
   const bodyRef = useRef();
@@ -30,6 +42,18 @@ export const Character = React.memo(function Character({
   const rightLegRef = useRef();
 
   const [hovered, setHovered] = useState(false);
+
+  // Check system prefers-reduced-motion if not explicitly provided
+  const reducedMotion = useMemo(() => {
+    if (typeof prefersReducedMotion === 'boolean') {
+      return prefersReducedMotion;
+    }
+    return (
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
+  }, [prefersReducedMotion]);
 
   // Materials with warm, stylized low-poly aesthetic
   const materials = useMemo(() => {
@@ -50,154 +74,72 @@ export const Character = React.memo(function Character({
     };
   }, [skinColor, hairColor, shirtColor, pantsColor]);
 
-  // Sitting vs Standing dimensions & baselines
-  const legHeight = 0.5;
-  const legRadius = 0.08;
-  const bodyHeight = 0.6;
-  const bodyWidth = 0.5;
-  const bodyDepth = 0.3;
-  const armRadius = 0.06;
-  const armHeight = 0.45;
-  const headRadius = 0.22;
+  // Dimensions & explicit positional baselines
+  const {
+    legHeight,
+    legRadius,
+    bodyHeight,
+    bodyWidth,
+    bodyDepth,
+    armRadius,
+    armHeight,
+    headRadius,
+  } = CHARACTER_DIMENSIONS;
 
-  const hipY = sitting ? 0.38 : legHeight;
-  const bodyCenterY = hipY + bodyHeight / 2;
-  const shoulderY = hipY + bodyHeight - 0.08;
-  const headCenterY = hipY + bodyHeight + headRadius + 0.04;
+  const baselines = useMemo(() => {
+    return getCharacterBaselines(sitting);
+  }, [sitting]);
 
   // Staggered timing for breathing & movement
   const animOffset = useMemo(() => {
     return (position[0] * 1.7 + position[2] * 2.3) % 10;
   }, [position]);
 
-  // Gentle, polished animations
+  // Animate via reusable animation preset registry
   useFrame((state) => {
-    const t = state.clock.getElapsedTime() + animOffset;
+    const t = reducedMotion ? 0 : state.clock.getElapsedTime() + animOffset;
 
-    // Reset baselines
+    // Reset default baselines
     if (bodyRef.current) {
-      bodyRef.current.position.y = bodyCenterY;
+      bodyRef.current.position.set(0, baselines.bodyCenterY, 0);
       bodyRef.current.rotation.set(0, 0, 0);
+      bodyRef.current.scale.set(1, 1, 1);
     }
     if (headRef.current) {
+      headRef.current.position.set(0, baselines.headCenterY, 0);
       headRef.current.rotation.set(0, 0, 0);
     }
-
-    switch (activity) {
-      case 'idle': {
-        // Very subtle natural breathing
-        const breath = 1 + Math.sin(t * 1.5) * 0.015;
-        if (bodyRef.current) bodyRef.current.scale.set(1, breath, 1);
-        if (headRef.current) headRef.current.rotation.x = Math.sin(t * 1.2) * 0.02;
-        if (leftArmRef.current) leftArmRef.current.rotation.set(0, 0, 0.04);
-        if (rightArmRef.current) rightArmRef.current.rotation.set(0, 0, -0.04);
-        break;
-      }
-
-      case 'typing': {
-        // Hands rest stably on keyboard with subtle calm typing
-        const tapL = Math.sin(t * 5.5) * 0.03;
-        const tapR = Math.sin(t * 5.5 + Math.PI) * 0.03;
-
-        if (leftArmRef.current) {
-          leftArmRef.current.rotation.set(-1.05 + tapL, 0.05, 0.12);
-        }
-        if (rightArmRef.current) {
-          rightArmRef.current.rotation.set(-1.05 + tapR, -0.05, -0.12);
-        }
-        // Subtle focus nod
-        if (headRef.current) {
-          headRef.current.rotation.x = 0.12 + Math.sin(t * 1.4) * 0.015;
-        }
-        // Gentle breathing
-        const breath = 1 + Math.sin(t * 1.5) * 0.012;
-        if (bodyRef.current) bodyRef.current.scale.set(1, breath, 1);
-        break;
-      }
-
-      case 'talking': {
-        // Calm discussion gestures (polite office talk)
-        const gesture = Math.sin(t * 2.0) * 0.08;
-        if (rightArmRef.current) {
-          rightArmRef.current.rotation.set(-0.65 + gesture, 0, -0.2);
-        }
-        if (leftArmRef.current) {
-          leftArmRef.current.rotation.set(-0.15, 0, 0.06);
-        }
-        if (headRef.current) {
-          headRef.current.rotation.set(
-            Math.sin(t * 2.2) * 0.04,
-            Math.sin(t * 1.5) * 0.06,
-            0
-          );
-        }
-        break;
-      }
-
-      case 'walking': {
-        if (!isWalking) {
-          // Standing still / paused
-          if (leftLegRef.current) leftLegRef.current.rotation.set(0, 0, 0);
-          if (rightLegRef.current) rightLegRef.current.rotation.set(0, 0, 0);
-          if (leftArmRef.current) leftArmRef.current.rotation.set(0, 0, 0.04);
-          if (rightArmRef.current) rightArmRef.current.rotation.set(-0.35, 0, -0.05);
-          if (bodyRef.current) bodyRef.current.position.y = bodyCenterY;
-        } else {
-          // Gentle walk cycle
-          const walkSpeed = 4.2;
-          const swingLeg = Math.sin(t * walkSpeed) * 0.32;
-          const swingArm = Math.sin(t * walkSpeed) * 0.28;
-
-          if (leftLegRef.current) leftLegRef.current.rotation.x = swingLeg;
-          if (rightLegRef.current) rightLegRef.current.rotation.x = -swingLeg;
-
-          if (leftArmRef.current) leftArmRef.current.rotation.x = -swingArm;
-          // Right arm holds folder/papers stably
-          if (rightArmRef.current) rightArmRef.current.rotation.set(-0.4, 0, -0.05);
-
-          if (bodyRef.current) {
-            bodyRef.current.position.y = bodyCenterY + Math.abs(Math.sin(t * walkSpeed)) * 0.02;
-          }
-          if (headRef.current) {
-            headRef.current.rotation.y = Math.sin(t * (walkSpeed / 2)) * 0.03;
-          }
-        }
-        break;
-      }
-
-      case 'writing': {
-        // Holding marker near whiteboard, writing smoothly
-        const writeWave = Math.sin(t * 2.5) * 0.035;
-        if (rightArmRef.current) {
-          rightArmRef.current.rotation.set(-1.3 + writeWave, Math.cos(t * 2.0) * 0.04, -0.1);
-        }
-        if (leftArmRef.current) {
-          leftArmRef.current.rotation.set(0, 0, 0.06);
-        }
-        if (headRef.current) {
-          headRef.current.rotation.x = 0.08 + Math.sin(t * 1.5) * 0.015;
-        }
-        break;
-      }
-
-      case 'phone': {
-        // Calm phone call posture
-        if (rightArmRef.current) {
-          // Hand holding phone near ear stably
-          rightArmRef.current.rotation.set(-2.0, -0.2, -0.45);
-        }
-        if (leftArmRef.current) {
-          leftArmRef.current.rotation.set(-0.3, 0, 0.1);
-        }
-        if (headRef.current) {
-          headRef.current.rotation.set(0.04, 0, -0.1 + Math.sin(t * 1.2) * 0.02);
-        }
-        break;
-      }
-
-      default:
-        break;
+    if (leftArmRef.current) {
+      leftArmRef.current.position.set(-bodyWidth / 2 - armRadius, baselines.shoulderY, 0);
+      leftArmRef.current.rotation.set(0, 0, 0.04);
     }
+    if (rightArmRef.current) {
+      rightArmRef.current.position.set(bodyWidth / 2 + armRadius, baselines.shoulderY, 0);
+      rightArmRef.current.rotation.set(0, 0, -0.04);
+    }
+    if (leftLegRef.current) {
+      leftLegRef.current.rotation.set(0, 0, 0);
+    }
+    if (rightLegRef.current) {
+      rightLegRef.current.rotation.set(0, 0, 0);
+    }
+
+    const preset = CHARACTER_ANIMATION_PRESETS[activity] || CHARACTER_ANIMATION_PRESETS.idle;
+    preset({
+      t,
+      sitting,
+      isWalking,
+      baselines,
+      refs: {
+        body: bodyRef.current,
+        head: headRef.current,
+        leftArm: leftArmRef.current,
+        rightArm: rightArmRef.current,
+        leftLeg: leftLegRef.current,
+        rightLeg: rightLegRef.current,
+      },
+      reducedMotion,
+    });
   });
 
   return (
@@ -224,7 +166,7 @@ export const Character = React.memo(function Character({
       {!sitting ? (
         // Standing legs
         <>
-          <group ref={leftLegRef} position={[-0.14, hipY, 0]}>
+          <group ref={leftLegRef} position={[-0.14, baselines.hipY, 0]}>
             <mesh
               castShadow
               receiveShadow
@@ -243,7 +185,7 @@ export const Character = React.memo(function Character({
             </mesh>
           </group>
 
-          <group ref={rightLegRef} position={[0.14, hipY, 0]}>
+          <group ref={rightLegRef} position={[0.14, baselines.hipY, 0]}>
             <mesh
               castShadow
               receiveShadow
@@ -263,61 +205,66 @@ export const Character = React.memo(function Character({
           </group>
         </>
       ) : (
-        // Sitting legs (bent: thighs forward + calves down)
-        <group position={[0, hipY, 0]}>
+        // Sitting legs (bent: thighs forward + calves down to floor)
+        <group position={[0, baselines.hipY, 0]}>
+          {/* Thighs extending forward along local +Z */}
           <mesh
             castShadow
             receiveShadow
-            position={[-0.13, -0.04, 0.16]}
+            position={[-0.13, -0.02, 0.17]}
             rotation={[Math.PI / 2, 0, 0]}
             material={materials.pants}
           >
-            <cylinderGeometry args={[legRadius, legRadius, 0.32, 16]} />
+            <cylinderGeometry args={[legRadius, legRadius, 0.34, 16]} />
           </mesh>
           <mesh
             castShadow
             receiveShadow
-            position={[0.13, -0.04, 0.16]}
+            position={[0.13, -0.02, 0.17]}
             rotation={[Math.PI / 2, 0, 0]}
             material={materials.pants}
           >
-            <cylinderGeometry args={[legRadius, legRadius, 0.32, 16]} />
+            <cylinderGeometry args={[legRadius, legRadius, 0.34, 16]} />
+          </mesh>
+
+          {/* Calves descending from knees at Z=0.32 down to ankles */}
+          <mesh
+            castShadow
+            receiveShadow
+            position={[-0.13, -0.23, 0.32]}
+            material={materials.pants}
+          >
+            <cylinderGeometry args={[legRadius, legRadius * 0.9, 0.38, 16]} />
           </mesh>
           <mesh
             castShadow
             receiveShadow
-            position={[-0.13, -0.22, 0.32]}
+            position={[0.13, -0.23, 0.32]}
             material={materials.pants}
           >
-            <cylinderGeometry args={[legRadius, legRadius * 0.9, 0.32, 16]} />
+            <cylinderGeometry args={[legRadius, legRadius * 0.9, 0.38, 16]} />
+          </mesh>
+
+          {/* Feet flat on the floor at Y=0 */}
+          <mesh
+            castShadow
+            position={[-0.13, -0.45, 0.36]}
+            material={materials.pants}
+          >
+            <boxGeometry args={[legRadius * 1.8, 0.06, 0.16]} />
           </mesh>
           <mesh
             castShadow
-            receiveShadow
-            position={[0.13, -0.22, 0.32]}
+            position={[0.13, -0.45, 0.36]}
             material={materials.pants}
           >
-            <cylinderGeometry args={[legRadius, legRadius * 0.9, 0.32, 16]} />
-          </mesh>
-          <mesh
-            castShadow
-            position={[-0.13, -0.36, 0.36]}
-            material={materials.pants}
-          >
-            <boxGeometry args={[legRadius * 1.8, 0.06, 0.14]} />
-          </mesh>
-          <mesh
-            castShadow
-            position={[0.13, -0.36, 0.36]}
-            material={materials.pants}
-          >
-            <boxGeometry args={[legRadius * 1.8, 0.06, 0.14]} />
+            <boxGeometry args={[legRadius * 1.8, 0.06, 0.16]} />
           </mesh>
         </group>
       )}
 
       {/* Body / Torso */}
-      <group ref={bodyRef} position={[0, bodyCenterY, 0]}>
+      <group ref={bodyRef} position={[0, baselines.bodyCenterY, 0]}>
         <mesh castShadow receiveShadow material={materials.shirt}>
           <boxGeometry args={[bodyWidth, bodyHeight, bodyDepth]} />
         </mesh>
@@ -326,7 +273,7 @@ export const Character = React.memo(function Character({
       {/* Left Arm */}
       <group
         ref={leftArmRef}
-        position={[-bodyWidth / 2 - armRadius, shoulderY, 0]}
+        position={[-bodyWidth / 2 - armRadius, baselines.shoulderY, 0]}
       >
         <mesh
           castShadow
@@ -349,7 +296,7 @@ export const Character = React.memo(function Character({
       {/* Right Arm */}
       <group
         ref={rightArmRef}
-        position={[bodyWidth / 2 + armRadius, shoulderY, 0]}
+        position={[bodyWidth / 2 + armRadius, baselines.shoulderY, 0]}
       >
         <mesh
           castShadow
@@ -392,7 +339,7 @@ export const Character = React.memo(function Character({
       </group>
 
       {/* Head Group */}
-      <group ref={headRef} position={[0, headCenterY, 0]}>
+      <group ref={headRef} position={[0, baselines.headCenterY, 0]}>
         {/* Head Sphere */}
         <mesh castShadow receiveShadow material={materials.skin}>
           <sphereGeometry args={[headRadius, 24, 24]} />
@@ -452,7 +399,7 @@ export const Character = React.memo(function Character({
       {/* Tooltip on hover */}
       {hovered && (name || tip) && (
         <Html
-          position={[0, headCenterY + headRadius + 0.4, 0]}
+          position={[0, baselines.headCenterY + headRadius + 0.4, 0]}
           center
           style={{ pointerEvents: 'none' }}
         >

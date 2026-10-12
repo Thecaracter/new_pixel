@@ -96,18 +96,10 @@ function EkoWalker() {
  * Instantiates all 7 office characters + walker Eko
  */
 export const Characters = React.memo(function Characters() {
-  // Meeting area Mira position:
-  // Meeting table center C = [9.4, 4.1], Mira chair at 160 deg, radius 1.9
-  // x = 9.4 + 1.9 * cos(160 * pi / 180) = 9.4 + 1.9 * (-0.93969) ≈ 7.615
-  // z = 4.1 + 1.9 * sin(160 * pi / 180) = 4.1 + 1.9 * (0.34202) ≈ 4.750
-  // Mira faces towards table center [9.4, 4.1] or slight angled:
-  // dx = 9.4 - 7.615 = 1.785, dz = 4.1 - 4.75 = -0.65 => angle ≈ Math.atan2(1.785, -0.65)
-  const miraAngle = Math.atan2(9.4 - 7.615, 4.1 - 4.750);
-
   return (
     <group name="office-characters">
-      {/* 1. Rina */}
-      <group position={[2.3, 0, 2.65]}>
+      {/* 1. Rina - Seated at Desk 1 */}
+      <group position={[2.3, 0, 2.7]}>
         <Character
           position={[0, 0, 0]}
           sitting={true}
@@ -120,11 +112,11 @@ export const Characters = React.memo(function Characters() {
           name="Rina"
           tip="Rina – Akuntan | Mengetik laporan bulanan"
         />
-        <SpeechBubble characterId="rina" position={[0, 1.8, 0]} delay={0} />
+        <SpeechBubble characterId="rina" position={[0, 1.9, 0]} delay={0} />
       </group>
 
-      {/* 2. Dimas */}
-      <group position={[5.8, 0, 2.65]}>
+      {/* 2. Dimas - Seated at Desk 3 */}
+      <group position={[5.8, 0, 2.7]}>
         <Character
           position={[0, 0, 0]}
           sitting={true}
@@ -137,7 +129,7 @@ export const Characters = React.memo(function Characters() {
           name="Dimas"
           tip="Dimas – Desainer | Menyusun mockup"
         />
-        <SpeechBubble characterId="dimas" position={[0, 1.8, 0]} delay={800} />
+        <SpeechBubble characterId="dimas" position={[0, 1.9, 0]} delay={800} />
       </group>
 
       {/* 3. Eko - Walker */}
@@ -195,13 +187,13 @@ export const Characters = React.memo(function Characters() {
         <SpeechBubble characterId="sinta" position={[0, 2.2, 0]} delay={3200} />
       </group>
 
-      {/* 7. Mira */}
-      <group position={[7.615, 0, 4.750]}>
+      {/* 7. Mira - Seated at Meeting Table West Chair */}
+      <group position={[7.8, 0, 4.1]}>
         <Character
           position={[0, 0, 0]}
           sitting={true}
           activity="phone"
-          lookDirection={miraAngle}
+          lookDirection={Math.PI / 2}
           skinColor="#f2c9a0"
           hairColor="#4a2c2a"
           shirtColor="#f2b84b"
@@ -210,7 +202,7 @@ export const Characters = React.memo(function Characters() {
           name="Mira"
           tip="Mira – Sales | Telepon dengan klien"
         />
-        <SpeechBubble characterId="mira" position={[0, 1.8, 0]} delay={4000} />
+        <SpeechBubble characterId="mira" position={[0, 1.9, 0]} delay={4000} />
       </group>
     </group>
   );
