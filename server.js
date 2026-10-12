@@ -37,19 +37,61 @@ app.use(express.static(path.join(__dirname, 'dist')));
 let currentSessionId = null;
 let currentModel = null;
 
-// Available models: can be configured via OPENCODE_MODELS env var (comma-separated)
-// Format: "provider/model,provider/model" or use defaults
+// Cache for available models (refresh every 5 minutes)
+let modelsCache = null;
+let modelsCacheTime = 0;
+const MODELS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Get available models from opencode CLI
+ * Caches result for 5 minutes to avoid repeated shell calls
+ */
 function getAvailableModels() {
+  const now = Date.now();
+  
+  // Return cached models if still valid
+  if (modelsCache && (now - modelsCacheTime) < MODELS_CACHE_TTL) {
+    return modelsCache;
+  }
+  
+  // Check for env override first
   const envModels = process.env.OPENCODE_MODELS;
   if (envModels) {
-    return envModels.split(',').map(m => m.trim()).filter(m => m);
+    const models = envModels.split(',').map(m => m.trim()).filter(m => m);
+    modelsCache = models;
+    modelsCacheTime = now;
+    return models;
   }
-  // Default models (common providers)
-  return [
-    '9router/claude-haiku-4.5-thinking-agentic',
-    '9router/claude-opus-4-1-latest',
-    '9router/claude-sonnet-4-20250514'
-  ];
+  
+  try {
+    // Execute opencode models command
+    const output = execSync(`${OPENCODE_BIN} models`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore'],
+      timeout: 10000 // 10 second timeout
+    });
+    
+    // Parse output - each line is already in provider/model format
+    const models = output
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line && line.includes('/')) // Filter valid provider/model lines
+      .filter(line => !line.match(/^\d+\s+files\s+in/)); // Skip summary lines
+    
+    if (models.length > 0) {
+      console.log(`Loaded ${models.length} models from opencode CLI`);
+      modelsCache = models;
+      modelsCacheTime = now;
+      return models;
+    }
+  } catch (error) {
+    console.error('ERROR: Failed to fetch models from opencode CLI:', error.message);
+    console.error('Stack:', error.stack);
+  }
+  
+  // No fallback - return empty array if command fails so error is visible
+  console.error('WARNING: Returning empty models array');
+  return [];
 }
 
 /**

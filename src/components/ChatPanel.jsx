@@ -207,7 +207,7 @@ export function ChatPanel() {
             <div className="chat-message chat-message-loading" role="status" aria-label="Loading response">
               <div className="chat-message-content">
                 <span className="chat-loading-spinner"></span>
-                <span>OpenCode is thinking...</span>
+                <span>is thinking...</span>
               </div>
             </div>
           )}

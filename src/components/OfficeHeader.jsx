@@ -16,3 +16,5 @@ export function OfficeHeader() {
     </header>
   );
 }
+
+export default OfficeHeader;

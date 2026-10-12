@@ -768,10 +768,16 @@ header p {
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.08);
   color: var(--ink);
+  color-scheme: light;
   font-family: inherit;
   font-size: 13px;
   cursor: pointer;
   transition: border-color 0.2s, background-color 0.2s;
+}
+
+.chat-model-select option {
+  background: #fff;
+  color: #2b2750;
 }
 
 .chat-model-select:hover:not(:disabled) {
@@ -818,6 +824,12 @@ header p {
 @media (prefers-color-scheme: dark) {
   .chat-model-select {
     background: rgba(255, 255, 255, 0.05);
+    color-scheme: dark;
+  }
+
+  .chat-model-select option {
+    background: #2d2860;
+    color: #f4f1ff;
   }
 
   .chat-model-select:hover:not(:disabled) {
