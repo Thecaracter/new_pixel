@@ -153,7 +153,7 @@ Response:
 
 **POST /api/chat**
 
-Request:
+Request (Standard Chat):
 ```json
 {
   "message": "What files are in this project?",
@@ -162,12 +162,87 @@ Request:
 }
 ```
 
-Response (success):
+Response (Standard Chat):
 ```json
 {
   "reply": "The project contains the following files...",
   "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4",
+  "model": "9router/claude-opus-4-1-latest",
+  "mode": "chat",
+  "phase": "chat"
+}
+```
+
+Request (Leader Coordination Mode - Arif):
+```json
+{
+  "message": "Kita mau buat fitur export PDF laporan bulanan.",
+  "mode": "leader",
   "model": "9router/claude-opus-4-1-latest"
+}
+```
+
+Response (Leader Mode - Clarifying Phase):
+```json
+{
+  "reply": "Sebelum membagi tugas ke tim, saya perlu mengklarifikasi beberapa detail teknis.",
+  "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4",
+  "model": "9router/claude-opus-4-1-latest",
+  "mode": "leader",
+  "phase": "clarifying",
+  "questions": [
+    "Apakah export di-generate di browser atau server?",
+    "Data apa saja yang wajib masuk dalam laporan bulanan ini?",
+    "Kapan batas waktu rilis yang ditargetkan?"
+  ],
+  "plan": null,
+  "confirmation_prompt": null,
+  "valid": true
+}
+```
+
+Response (Leader Mode - Awaiting Confirmation Phase):
+```json
+{
+  "reply": "Rencana kerja sprint untuk fitur export PDF sudah disusun bersama tim.",
+  "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4",
+  "model": "9router/claude-opus-4-1-latest",
+  "mode": "leader",
+  "phase": "awaiting_confirmation",
+  "questions": [],
+  "plan": {
+    "title": "Fitur Export PDF Laporan Bulanan",
+    "goal": "Menyediakan download PDF laporan keuangan dan operasional",
+    "scope": "Frontend button, backend generator, template PDF",
+    "tasks": [
+      {
+        "id": "TASK-1",
+        "title": "Requirement & Skema Data",
+        "assignee": "Rina",
+        "role": "Finance / Accountant",
+        "description": "Menentukan field tabel dan format angka rupiah",
+        "status": "pending"
+      },
+      {
+        "id": "TASK-2",
+        "title": "Desain Layout PDF",
+        "assignee": "Dimas",
+        "role": "UI/UX Designer",
+        "description": "Membuat template tata letak header, tabel, dan footer",
+        "status": "pending"
+      },
+      {
+        "id": "TASK-3",
+        "title": "Implementasi Tombol Export & Service",
+        "assignee": "Bayu",
+        "role": "Product / Frontend Engineer",
+        "description": "Wiring tombol di antarmuka dan penanganan download stream",
+        "status": "pending"
+      }
+    ]
+  },
+  "confirmation_prompt": "Apakah rencana tugas di atas sudah sesuai? Balas 'setuju' untuk konfirmasi sebelum tim memulai pengerjaan.",
+  "valid": true
 }
 ```
 
@@ -180,10 +255,12 @@ Response (error):
 ```
 
 **Notes**:
-- The `sessionId` and `model` fields are optional in the request
+- The `sessionId`, `model`, and `mode` fields are optional in the request
+- Mode dapat diaktifkan lewat `mode: "leader"` atau `leader: true`
+- Seluruh tugas pada `plan.tasks` berstatus `pending` (MVP tidak mengeksekusi otomatis)
 - If `sessionId` is omitted, a new session is created
 - If `model` is omitted, the currently selected model is used
-- The response always includes both fields for tracking
+- The response always includes tracking fields
 
 ### Session Continuity
 
@@ -280,6 +357,35 @@ If you see a different error message with more details:
 - The `/api/chat` and `/api/models` endpoints are only available during development via the proxy
 - For production deployment, you would need to run the Express backend as a separate service
 - Or build a production-ready backend integration (not covered in this setup)
+
+## Testing
+
+Run unit & integration tests for chat and leader coordination contracts:
+
+```bash
+# Run all tests
+npm test
+
+# Run unit tests only
+npm run test:unit
+
+# Run integration tests only
+npm run test:integration
+```
+
+Manual testing with `curl`:
+
+```bash
+# Standard chat request (backward-compatible)
+curl -X POST http://127.0.0.1:3001/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Halo Arif, apa kabar?"}'
+
+# Leader coordination mode (requests clarification or structured plan)
+curl -X POST http://127.0.0.1:3001/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Tolong pimpin pembuatan fitur autentikasi OAuth", "mode": "leader"}'
+```
 
 ## Preservation Notes
 

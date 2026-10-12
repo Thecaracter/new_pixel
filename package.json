@@ -9,6 +9,9 @@
     "dev:frontend": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node --test test-leader-contract.mjs test-api-chat-contract.mjs",
+    "test:unit": "node --test test-leader-contract.mjs",
+    "test:integration": "node --test test-api-chat-contract.mjs",
     "type-check": "echo 'No TypeScript configured'"
   },
   "keywords": [],
