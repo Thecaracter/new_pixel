@@ -36,11 +36,14 @@ export function ChatPanel() {
   const [modelsLoading, setModelsLoading] = useState(true);
   const [modelsError, setModelsError] = useState(null);
 
+  // Stepper state for clarifying questions: { "msgIdx": currentStep }
+  const [questionStep, setQuestionStep] = useState({});
   // Answers map: { "msgIdx-qIdx": "answer text" }
   const [questionAnswers, setQuestionAnswers] = useState({});
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const stepperInputRef = useRef(null);
 
   // Fetch available models and team roster on mount
   useEffect(() => {
@@ -112,6 +115,24 @@ export function ChatPanel() {
     setQuestionAnswers(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleStepNext = (msgIndex, totalQuestions) => {
+    const current = questionStep[msgIndex] || 0;
+    const answerKey = `${msgIndex}-${current}`;
+    if (!(questionAnswers[answerKey] || '').trim()) return;
+    if (current < totalQuestions - 1) {
+      setQuestionStep(prev => ({ ...prev, [msgIndex]: current + 1 }));
+      setTimeout(() => stepperInputRef.current?.focus(), 50);
+    }
+  };
+
+  const handleStepBack = (msgIndex) => {
+    const current = questionStep[msgIndex] || 0;
+    if (current > 0) {
+      setQuestionStep(prev => ({ ...prev, [msgIndex]: current - 1 }));
+      setTimeout(() => stepperInputRef.current?.focus(), 50);
+    }
+  };
+
   const handleSubmitAllAnswers = (msgIndex, questions) => {
     if (loading) return;
     const answers = questions.map((q, qIdx) => {
@@ -119,10 +140,14 @@ export function ChatPanel() {
       return `${q}\n→ ${(questionAnswers[key] || '').trim()}`;
     });
     const fullMessage = `Menjawab pertanyaan klarifikasi:\n\n${answers.join('\n\n')}`;
-    // Clear answers for this message
     setQuestionAnswers(prev => {
       const next = { ...prev };
       questions.forEach((_, qIdx) => { delete next[`${msgIndex}-${qIdx}`]; });
+      return next;
+    });
+    setQuestionStep(prev => {
+      const next = { ...prev };
+      delete next[msgIndex];
       return next;
     });
     handleSubmit(null, fullMessage);
@@ -489,65 +514,97 @@ export function ChatPanel() {
 
                       {/* Clarifying Questions Section */}
                       {Array.isArray(message.questions) && message.questions.length > 0 && (() => {
-                        const allAnswered = message.questions.every((_, qIdx) => {
-                          const key = `${index}-${qIdx}`;
-                          return (questionAnswers[key] || '').trim().length > 0;
-                        });
-                        const answeredCount = message.questions.filter((_, qIdx) =>
+                        const total = message.questions.length;
+                        const step = questionStep[index] || 0;
+                        const answerKey = `${index}-${step}`;
+                        const currentAnswer = questionAnswers[answerKey] || '';
+                        const currentFilled = currentAnswer.trim().length > 0;
+                        const isLastStep = step === total - 1;
+                        const allAnswered = message.questions.every((_, qIdx) =>
                           (questionAnswers[`${index}-${qIdx}`] || '').trim().length > 0
-                        ).length;
+                        );
 
                         return (
                           <div className="leader-questions-panel">
                             <div className="panel-heading">
                               <span aria-hidden="true">❓</span>
-                              <strong>Poin Klarifikasi yang Diperlukan:</strong>
-                              <span className="questions-progress">
-                                {answeredCount}/{message.questions.length} terjawab
-                              </span>
+                              <strong>Klarifikasi</strong>
                             </div>
-                            <ul className="questions-items-list">
-                              {message.questions.map((q, qIdx) => {
-                                const answerKey = `${index}-${qIdx}`;
-                                const answerVal = questionAnswers[answerKey] || '';
-                                const isFilled = answerVal.trim().length > 0;
+
+                            {/* Step dots */}
+                            <div className="stepper-dots">
+                              {message.questions.map((_, dotIdx) => {
+                                const dotFilled = (questionAnswers[`${index}-${dotIdx}`] || '').trim().length > 0;
                                 return (
-                                  <li key={qIdx} className="question-item-wrapper">
-                                    <div className="question-item">
-                                      <span className={`question-status-dot ${isFilled ? 'filled' : ''}`}>
-                                        {isFilled ? '✓' : (qIdx + 1)}
-                                      </span>
-                                      <span className="question-text">{q}</span>
-                                    </div>
-                                    <div className="question-inline-reply">
-                                      <input
-                                        type="text"
-                                        className={`question-reply-input ${isFilled ? 'answered' : ''}`}
-                                        value={answerVal}
-                                        onChange={(e) => handleAnswerChange(answerKey, e.target.value)}
-                                        placeholder="Ketik jawaban Anda..."
-                                        disabled={loading}
-                                      />
-                                    </div>
-                                  </li>
+                                  <span
+                                    key={dotIdx}
+                                    className={`stepper-dot${dotIdx === step ? ' active' : ''}${dotFilled ? ' filled' : ''}`}
+                                    title={`Pertanyaan ${dotIdx + 1}`}
+                                  />
                                 );
                               })}
-                            </ul>
-                            <div className="questions-submit-bar">
-                              <span className="questions-submit-hint">
-                                {allAnswered
-                                  ? '✅ Semua pertanyaan sudah dijawab'
-                                  : `⏳ Jawab semua pertanyaan dulu (${answeredCount}/${message.questions.length})`
-                                }
-                              </span>
+                            </div>
+
+                            {/* Current question card */}
+                            <div className="stepper-card" key={step}>
+                              <div className="stepper-question-label">
+                                Pertanyaan {step + 1} dari {total}
+                              </div>
+                              <div className="stepper-question-text">
+                                {message.questions[step]}
+                              </div>
+                              <input
+                                ref={stepperInputRef}
+                                type="text"
+                                className={`stepper-input ${currentFilled ? 'answered' : ''}`}
+                                value={currentAnswer}
+                                onChange={(e) => handleAnswerChange(answerKey, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && currentFilled) {
+                                    e.preventDefault();
+                                    if (isLastStep && allAnswered) {
+                                      handleSubmitAllAnswers(index, message.questions);
+                                    } else {
+                                      handleStepNext(index, total);
+                                    }
+                                  }
+                                }}
+                                placeholder="Ketik jawaban Anda..."
+                                disabled={loading}
+                                autoFocus
+                              />
+                            </div>
+
+                            {/* Navigation buttons */}
+                            <div className="stepper-nav">
                               <button
                                 type="button"
-                                className="questions-submit-btn"
-                                onClick={() => handleSubmitAllAnswers(index, message.questions)}
-                                disabled={!allAnswered || loading}
+                                className="stepper-btn stepper-btn-back"
+                                onClick={() => handleStepBack(index)}
+                                disabled={step === 0}
                               >
-                                📨 Kirim Semua Jawaban
+                                ← Sebelumnya
                               </button>
+
+                              {isLastStep && allAnswered ? (
+                                <button
+                                  type="button"
+                                  className="stepper-btn stepper-btn-submit"
+                                  onClick={() => handleSubmitAllAnswers(index, message.questions)}
+                                  disabled={loading}
+                                >
+                                  📨 Kirim Semua Jawaban
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="stepper-btn stepper-btn-next"
+                                  onClick={() => handleStepNext(index, total)}
+                                  disabled={!currentFilled}
+                                >
+                                  Selanjutnya →
+                                </button>
+                              )}
                             </div>
                           </div>
                         );
