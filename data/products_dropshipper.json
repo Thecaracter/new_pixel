@@ -1,0 +1,77 @@
+{
+  "version": "dropshipper-v1",
+  "nama": "Versi Dropshipper",
+  "deskripsi": "Tanpa stok, pisah harga beli (supplier) + harga jual, siap export ke marketplace",
+  "barang": [
+    {
+      "id": "ds-001",
+      "nama": "Gantungan Kunci Silicone Custom",
+      "hargaBeliSupplier": 8000,
+      "hargaJual": 25000,
+      "margin": 17000,
+      "kategori": "Aksesoris",
+      "berat": 5,
+      "stokSupplier": "tidak terbatas",
+      "satuan": "pcs",
+      "linkSupplier": "https://example.com/supplier/gantungan-kunci",
+      "marketplaceReady": true,
+      "status": "aktif"
+    },
+    {
+      "id": "ds-002",
+      "nama": "Mouse Pad Gaming XL",
+      "hargaBeliSupplier": 25000,
+      "hargaJual": 55000,
+      "margin": 30000,
+      "kategori": "Komputer & Aksesoris",
+      "berat": 150,
+      "stokSupplier": "tidak terbatas",
+      "satuan": "pcs",
+      "linkSupplier": "https://example.com/supplier/mousepad-xl",
+      "marketplaceReady": true,
+      "status": "aktif"
+    },
+    {
+      "id": "ds-003",
+      "nama": "Case HP Hard Case Soft Touch",
+      "hargaBeliSupplier": 18000,
+      "hargaJual": 45000,
+      "margin": 27000,
+      "kategori": "Aksesoris HP",
+      "berat": 30,
+      "stokSupplier": "tidak terbatas",
+      "satuan": "pcs",
+      "linkSupplier": "https://example.com/supplier/case-hp",
+      "marketplaceReady": true,
+      "status": "aktif"
+    },
+    {
+      "id": "ds-004",
+      "nama": "Stiker Vinyl Waterproof",
+      "hargaBeliSupplier": 2000,
+      "hargaJual": 9000,
+      "margin": 7000,
+      "kategori": "Dekorasi",
+      "berat": 1,
+      "stokSupplier": "tidak terbatas",
+      "satuan": "pcs",
+      "linkSupplier": "https://example.com/supplier/stiker-vinyl",
+      "marketplaceReady": true,
+      "status": "aktif"
+    },
+    {
+      "id": "ds-005",
+      "nama": "Pouch Kabel Organizer",
+      "hargaBeliSupplier": 12000,
+      "hargaJual": 29000,
+      "margin": 17000,
+      "kategori": "Organizer",
+      "berat": 20,
+      "stokSupplier": "tidak terbatas",
+      "satuan": "pcs",
+      "linkSupplier": "https://example.com/supplier/pouch-kabel",
+      "marketplaceReady": true,
+      "status": "aktif"
+    }
+  ]
+}

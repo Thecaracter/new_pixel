@@ -36,6 +36,9 @@ export function ChatPanel() {
   const [modelsLoading, setModelsLoading] = useState(true);
   const [modelsError, setModelsError] = useState(null);
 
+  // Answers map: { "msgIdx-qIdx": "answer text" }
+  const [questionAnswers, setQuestionAnswers] = useState({});
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -105,6 +108,26 @@ export function ChatPanel() {
     }
   };
 
+  const handleAnswerChange = (key, value) => {
+    setQuestionAnswers(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubmitAllAnswers = (msgIndex, questions) => {
+    if (loading) return;
+    const answers = questions.map((q, qIdx) => {
+      const key = `${msgIndex}-${qIdx}`;
+      return `${q}\n→ ${(questionAnswers[key] || '').trim()}`;
+    });
+    const fullMessage = `Menjawab pertanyaan klarifikasi:\n\n${answers.join('\n\n')}`;
+    // Clear answers for this message
+    setQuestionAnswers(prev => {
+      const next = { ...prev };
+      questions.forEach((_, qIdx) => { delete next[`${msgIndex}-${qIdx}`]; });
+      return next;
+    });
+    handleSubmit(null, fullMessage);
+  };
+
   const handleResetSession = () => {
     if (loading) return;
     if (mode === 'leader') {
@@ -117,10 +140,10 @@ export function ChatPanel() {
     setError(null);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, directMessage) => {
     if (e) e.preventDefault();
 
-    const trimmedInput = inputValue.trim();
+    const trimmedInput = directMessage || inputValue.trim();
     if (!trimmedInput || loading) return;
 
     const currentMode = mode;
@@ -465,29 +488,70 @@ export function ChatPanel() {
                       </div>
 
                       {/* Clarifying Questions Section */}
-                      {Array.isArray(message.questions) && message.questions.length > 0 && (
-                        <div className="leader-questions-panel">
-                          <div className="panel-heading">
-                            <span aria-hidden="true">❓</span>
-                            <strong>Poin Klarifikasi yang Diperlukan:</strong>
+                      {Array.isArray(message.questions) && message.questions.length > 0 && (() => {
+                        const allAnswered = message.questions.every((_, qIdx) => {
+                          const key = `${index}-${qIdx}`;
+                          return (questionAnswers[key] || '').trim().length > 0;
+                        });
+                        const answeredCount = message.questions.filter((_, qIdx) =>
+                          (questionAnswers[`${index}-${qIdx}`] || '').trim().length > 0
+                        ).length;
+
+                        return (
+                          <div className="leader-questions-panel">
+                            <div className="panel-heading">
+                              <span aria-hidden="true">❓</span>
+                              <strong>Poin Klarifikasi yang Diperlukan:</strong>
+                              <span className="questions-progress">
+                                {answeredCount}/{message.questions.length} terjawab
+                              </span>
+                            </div>
+                            <ul className="questions-items-list">
+                              {message.questions.map((q, qIdx) => {
+                                const answerKey = `${index}-${qIdx}`;
+                                const answerVal = questionAnswers[answerKey] || '';
+                                const isFilled = answerVal.trim().length > 0;
+                                return (
+                                  <li key={qIdx} className="question-item-wrapper">
+                                    <div className="question-item">
+                                      <span className={`question-status-dot ${isFilled ? 'filled' : ''}`}>
+                                        {isFilled ? '✓' : (qIdx + 1)}
+                                      </span>
+                                      <span className="question-text">{q}</span>
+                                    </div>
+                                    <div className="question-inline-reply">
+                                      <input
+                                        type="text"
+                                        className={`question-reply-input ${isFilled ? 'answered' : ''}`}
+                                        value={answerVal}
+                                        onChange={(e) => handleAnswerChange(answerKey, e.target.value)}
+                                        placeholder="Ketik jawaban Anda..."
+                                        disabled={loading}
+                                      />
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                            <div className="questions-submit-bar">
+                              <span className="questions-submit-hint">
+                                {allAnswered
+                                  ? '✅ Semua pertanyaan sudah dijawab'
+                                  : `⏳ Jawab semua pertanyaan dulu (${answeredCount}/${message.questions.length})`
+                                }
+                              </span>
+                              <button
+                                type="button"
+                                className="questions-submit-btn"
+                                onClick={() => handleSubmitAllAnswers(index, message.questions)}
+                                disabled={!allAnswered || loading}
+                              >
+                                📨 Kirim Semua Jawaban
+                              </button>
+                            </div>
                           </div>
-                          <ul className="questions-items-list">
-                            {message.questions.map((q, qIdx) => (
-                              <li key={qIdx} className="question-item">
-                                <span className="question-text">{q}</span>
-                                <button
-                                  type="button"
-                                  className="question-reply-btn"
-                                  onClick={() => handleQuickAction(`Menjawab "${q}": `)}
-                                  title="Jawab pertanyaan ini"
-                                >
-                                  Jawab
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Planned Tasks Section */}
                       {message.plan && (

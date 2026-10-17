@@ -5,13 +5,13 @@
   "description": "Virtual office scene converted to React",
   "main": "index.js",
   "scripts": {
-    "dev": "node server.js",
+    "dev": "node server/index.js",
     "dev:frontend": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test test-leader-contract.mjs test-api-chat-contract.mjs",
-    "test:unit": "node --test test-leader-contract.mjs",
-    "test:integration": "node --test test-api-chat-contract.mjs",
+    "test": "node --test tests/leader-contract.mjs tests/api-chat-contract.mjs",
+    "test:unit": "node --test tests/leader-contract.mjs",
+    "test:integration": "node --test tests/api-chat-contract.mjs",
     "type-check": "echo 'No TypeScript configured'"
   },
   "keywords": [],

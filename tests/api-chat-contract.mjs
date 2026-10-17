@@ -1,7 +1,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import http from 'http';
-import { app } from './server.js';
+import { app } from '../server/index.js';
 
 describe('HTTP /api/chat Contract Integration Tests', () => {
   let testServer;

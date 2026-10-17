@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __rootdir = path.resolve(__dirname, '..');
 const app = express();
 
 // Find opencode executable path
@@ -31,7 +32,7 @@ try {
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__rootdir, 'dist')));
 
 // Store active session IDs and model across requests (isolated per mode)
 let currentChatSessionId = null;
@@ -359,16 +360,16 @@ app.post('/api/chat', async (req, res) => {
   const effectiveMode = isLeaderMode ? 'leader' : 'chat';
   
   // Validate and sanitize model selection
-  let selectedModel = model || currentModel;
-  if (selectedModel) {
-    // Validate model format: should be provider/model
-    if (!/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/.test(selectedModel)) {
+  // Validate only the model from the request body, not currentModel (already validated when set)
+  if (model) {
+    if (!/^[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_.@-]+)+$/.test(model)) {
       return res.status(400).json({
         error: 'Invalid model',
         details: 'model must be in format provider/model'
       });
     }
   }
+  let selectedModel = model || currentModel;
   
   // When model changes, reset session to avoid incompatibility
   let nextSessionId = sessionId;
@@ -412,11 +413,11 @@ app.post('/api/chat', async (req, res) => {
       promptToSend = `[SYSTEM INSTRUCTION]\n${LEADER_SYSTEM_PROMPT}\n[/SYSTEM INSTRUCTION]\n\n[USER REQUEST]\n${sanitizedUserMessage}\n[/USER REQUEST]`;
     }
 
-    // Add the message as the final argument(s)
-    args.push(promptToSend);
+    // Add '-' so opencode reads prompt from stdin
+    args.push('-');
 
-    // Execute opencode run
-    const result = await executeOpencode(args);
+    // Execute opencode run — prompt sent via stdin, not as CLI arg
+    const result = await executeOpencode(args, promptToSend);
 
     // Update session and model tracking
     if (result.sessionId) {
@@ -478,24 +479,29 @@ app.post('/api/chat', async (req, res) => {
 });
 
 /**
- * Execute opencode run command and capture output
- * Expects JSON format output with sessionID and text events
- * @param {string[]} args - Arguments to pass to opencode
+ * Execute opencode run command and capture output.
+ * Prompt is written to stdin to avoid Windows 8191-char CLI arg length limit.
+ * @param {string[]} args - Arguments excluding the prompt
+ * @param {string} prompt - The prompt text, sent via stdin
  * @returns {Promise<{output: string, sessionId: string|null}>}
  */
-function executeOpencode(args) {
+function executeOpencode(args, prompt) {
   return new Promise((resolve, reject) => {
     let stdout = '';
     let stderr = '';
     let sessionId = null;
     let textContent = [];
 
-    // Use shell: true to handle PATH resolution on all platforms
+    // stdin: 'pipe' so we write the prompt without CLI arg length limits
     const child = spawn(OPENCODE_BIN, args, {
-      cwd: __dirname,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      cwd: __rootdir,
+      stdio: ['pipe', 'pipe', 'pipe'],
       shell: true,
     });
+
+    // Send prompt via stdin and close so opencode knows input is done
+    child.stdin.write(prompt, 'utf8');
+    child.stdin.end();
 
     child.stdout.on('data', (data) => {
       stdout += data.toString();
@@ -505,11 +511,11 @@ function executeOpencode(args) {
       stderr += data.toString();
     });
 
-    // Timeout after 30 seconds
+    // Timeout after 60 seconds
     const timeout = setTimeout(() => {
       child.kill();
-      reject(new Error('OpenCode request timeout (30s)'));
-    }, 30000);
+      reject(new Error('OpenCode request timeout (60s)'));
+    }, 60000);
 
     child.on('close', (code) => {
       clearTimeout(timeout);
@@ -570,13 +576,14 @@ app.get('/api/team', (req, res) => {
 
 // 404 fallback for SPA
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__rootdir, 'dist', 'index.html'));
 });
 
 // Start backend server only if this file is run directly (not imported as a module in tests)
 const isMainModule = process.argv[1] && (
   process.argv[1] === fileURLToPath(import.meta.url) ||
-  process.argv[1].endsWith('server.js')
+  process.argv[1].endsWith('server/index.js') ||
+  process.argv[1].endsWith('server\\index.js')
 );
 
 let server = null;
@@ -590,7 +597,7 @@ if (isMainModule) {
     // Spawn Vite dev server after backend is ready
     console.log('\n📦 Starting Vite dev server...');
     const vite = spawn('npm', ['run', 'dev:frontend'], {
-      cwd: __dirname,
+      cwd: __rootdir,
       stdio: 'inherit',
       shell: process.platform === 'win32'
     });

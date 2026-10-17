@@ -1,0 +1,67 @@
+{
+  "version": "jual-cepat-v1",
+  "nama": "Versi Jual Cepat",
+  "deskripsi": "Barang kebutuhan harian/impulse, ringan, harga terjangkau, gampang closing",
+  "barang": [
+    {
+      "id": "jc-001",
+      "nama": "Minyak Angin Roll-On 10ml",
+      "hargaJual": 15000,
+      "hargaBeli": 8000,
+      "margin": 7000,
+      "kategori": "Kesehatan & Kebersihan",
+      "berat": 10,
+      "stok": 100,
+      "satuan": "pcs",
+      "status": "aktif"
+    },
+    {
+      "id": "jc-002",
+      "nama": "Sabun Cuci Tangan Travel 60ml",
+      "hargaJual": 12000,
+      "hargaBeli": 6000,
+      "margin": 6000,
+      "kategori": "Kesehatan & Kebersihan",
+      "berat": 60,
+      "stok": 150,
+      "satuan": "pcs",
+      "status": "aktif"
+    },
+    {
+      "id": "jc-003",
+      "nama": "Masker Earloop 1 Lembar (Pack)",
+      "hargaJual": 2500,
+      "hargaBeli": 1000,
+      "margin": 1500,
+      "kategori": "Kesehatan",
+      "berat": 2,
+      "stok": 500,
+      "satuan": "pcs",
+      "status": "aktif"
+    },
+    {
+      "id": "jc-004",
+      "nama": "Tisu Mini Travel 10 Sheet",
+      "hargaJual": 3000,
+      "hargaBeli": 1000,
+      "margin": 2000,
+      "kategori": "Kebersihan",
+      "berat": 5,
+      "stok": 300,
+      "satuan": "pcs",
+      "status": "aktif"
+    },
+    {
+      "id": "jc-005",
+      "nama": "Coklat Batang Mini",
+      "hargaJual": 5000,
+      "hargaBeli": 2500,
+      "margin": 2500,
+      "kategori": "Makanan Ringan",
+      "berat": 15,
+      "stok": 200,
+      "satuan": "pcs",
+      "status": "aktif"
+    }
+  ]
+}

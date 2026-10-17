@@ -1240,14 +1240,39 @@ header p {
   gap: 8px;
 }
 
+.question-item-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .question-item {
   font-size: 13px;
   line-height: 1.4;
   color: var(--ink);
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 8px;
+}
+
+.question-status-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(133, 100, 4, 0.12);
+  color: #856404;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+
+.question-status-dot.filled {
+  background: #28a745;
+  color: #fff;
 }
 
 .question-reply-btn {
@@ -1265,6 +1290,97 @@ header p {
 .question-reply-btn:hover {
   background: #ffc107;
   color: #000;
+}
+
+.question-inline-reply {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0 0 2px 28px;
+  animation: slideDown 0.15s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.question-reply-input {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid rgba(133, 100, 4, 0.35);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink, #333);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.question-reply-input:focus {
+  border-color: #ffc107;
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+}
+
+.question-reply-input.answered {
+  border-color: #28a745;
+  background: rgba(40, 167, 69, 0.04);
+}
+
+.question-reply-input.answered:focus {
+  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.15);
+}
+
+.question-reply-input::placeholder {
+  color: #aaa;
+}
+
+.questions-progress {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: #856404;
+  opacity: 0.8;
+}
+
+.questions-submit-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(133, 100, 4, 0.15);
+}
+
+.questions-submit-hint {
+  font-size: 11px;
+  color: #856404;
+  opacity: 0.85;
+}
+
+.questions-submit-btn {
+  padding: 7px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #ffc107;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s, transform 0.1s;
+}
+
+.questions-submit-btn:hover:not(:disabled) {
+  background: #e0a800;
+  transform: translateY(-1px);
+}
+
+.questions-submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Plan & Tasks panel */

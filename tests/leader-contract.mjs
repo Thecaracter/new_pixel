@@ -5,7 +5,7 @@ import {
   normalizeLeaderResponse,
   TEAM_MEMBERS,
   LEADER_SYSTEM_PROMPT
-} from './server.js';
+} from '../server/index.js';
 
 describe('Leader Coordination Contract Unit Tests', () => {
   it('should expose team members list including Arif and Sinta', () => {
