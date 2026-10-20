@@ -18,20 +18,19 @@ export const KALIMAT = {
 
 /**
  * Eko (Walker) Component
- * Walks back and forth between [4.1, 0, 3.4] and [3.0, 0, 8.0] over 12 seconds:
- * - 0s..5s: walks from A to B (5s)
- * - 5s..6s: pauses at B (1s)
- * - 6s..11s: walks from B to A (5s)
- * - 11s..12s: pauses at A (1s)
+ * Walks smoothly along the wide, obstacle-free central hallway corridor:
+ * - A: [8.8, 0, 2.2] (Near Workstation wing & Glass Meeting Room entrance)
+ * - B: [8.8, 0, 7.2] (Near Breakout Lounge & Coffee Bar area)
+ * Has complete obstacle clearance: avoids all desks, chairs, partitions, and plants!
  */
 function EkoWalker() {
   const groupRef = useRef();
   const [isMoving, setIsMoving] = React.useState(true);
-  const A = [4.1, 0, 3.4];
-  const B = [3.0, 0, 8.0];
+  const A = [8.8, 0, 2.2];
+  const B = [8.8, 0, 7.2];
 
-  const angleForward = Math.atan2(B[0] - A[0], B[2] - A[2]);
-  const angleBackward = Math.atan2(A[0] - B[0], A[2] - B[2]);
+  const angleForward = Math.atan2(B[0] - A[0], B[2] - A[2]); // 0 (faces South towards Lounge)
+  const angleBackward = Math.atan2(A[0] - B[0], A[2] - B[2]); // Math.PI (faces North towards Workstations)
 
   useFrame((state) => {
     if (!groupRef.current) return;
@@ -43,20 +42,24 @@ function EkoWalker() {
     let angle = angleForward;
 
     if (cycle < 6) {
+      // Walking South from A to B
       f = cycle / 6;
       angle = angleForward;
       walking = true;
     } else if (cycle < 7) {
+      // Pausing at B and turning around
       f = 1;
-      angle = angleForward;
+      angle = angleBackward;
       walking = false;
     } else if (cycle < 13) {
+      // Walking North from B to A
       f = 1 - (cycle - 7) / 6;
       angle = angleBackward;
       walking = true;
     } else {
+      // Pausing at A and turning around
       f = 0;
-      angle = angleBackward;
+      angle = angleForward;
       walking = false;
     }
 
@@ -91,20 +94,20 @@ function EkoWalker() {
   );
 }
 
-// Extra spots for newly added team members in the virtual office
+// Extra spots for newly added team members in the spacious partitioned office
 const EXTRA_SPOTS = [
-  // Spot 1: Desk 2 (Empty desk since Eko walks)
-  { position: [2.3, 0, 6.05], sitting: true, lookDirection: Math.PI, activity: 'typing' },
-  // Spot 2: Meeting Table East Chair
-  { position: [11.0, 0, 4.1], sitting: true, lookDirection: -Math.PI / 2, activity: 'phone' },
-  // Spot 3: Meeting Table North Chair
-  { position: [9.4, 0, 2.5], sitting: true, lookDirection: Math.PI, activity: 'typing' },
-  // Spot 4: Meeting Table South Chair
-  { position: [9.4, 0, 5.7], sitting: true, lookDirection: 0, activity: 'phone' },
+  // Spot 1: Shared Workstation Desk 4
+  { position: [6.6, 0, 5.55], sitting: true, lookDirection: Math.PI, activity: 'typing' },
+  // Spot 2: Meeting Table East Chair (inside Glass Meeting Room)
+  { position: [14.8, 0, 3.4], sitting: true, lookDirection: -Math.PI / 2, activity: 'phone' },
+  // Spot 3: Meeting Table North-West Chair (inside Glass Meeting Room)
+  { position: [12.4, 0, 2.01], sitting: true, lookDirection: 0.5236, activity: 'typing' },
+  // Spot 4: Meeting Table South-West Chair (inside Glass Meeting Room)
+  { position: [12.4, 0, 4.79], sitting: true, lookDirection: 2.618, activity: 'phone' },
   // Spot 5: Coffee counter / pantry
-  { position: [1.8, 0, 7.5], sitting: false, lookDirection: Math.PI / 3, activity: 'talking' },
+  { position: [3.8, 0, 9.4], sitting: false, lookDirection: -Math.PI * 0.4, activity: 'talking' },
   // Spot 6: Bookshelf / reading nook
-  { position: [4.2, 0, 1.2], sitting: false, lookDirection: Math.PI * 0.8, activity: 'writing' },
+  { position: [0.8, 0, 1.8], sitting: false, lookDirection: Math.PI * 0.8, activity: 'writing' },
 ];
 
 /**
@@ -157,9 +160,9 @@ export const Characters = React.memo(function Characters({ teamMembers = [] }) {
 
   return (
     <group name="office-characters">
-      {/* 1. Rina - Seated at Desk 1 */}
+      {/* 1. Rina - Seated at Desk 1 (Workstation Wing) */}
       {isRinaActive && (
-        <group position={[2.3, 0, 2.7]}>
+        <group position={[2.6, 0, 2.95]}>
           <Character
             position={[0, 0, 0]}
             sitting={true}
@@ -176,9 +179,9 @@ export const Characters = React.memo(function Characters({ teamMembers = [] }) {
         </group>
       )}
 
-      {/* 2. Dimas - Seated at Desk 3 */}
+      {/* 2. Dimas - Seated at Desk 2 (Workstation Wing) */}
       {isDimasActive && (
-        <group position={[5.8, 0, 2.7]}>
+        <group position={[6.6, 0, 2.95]}>
           <Character
             position={[0, 0, 0]}
             sitting={true}
@@ -195,12 +198,12 @@ export const Characters = React.memo(function Characters({ teamMembers = [] }) {
         </group>
       )}
 
-      {/* 3. Eko - Walker */}
+      {/* 3. Eko - Walker across central hallway */}
       {isEkoActive && <EkoWalker />}
 
-      {/* 4. Arif */}
+      {/* 4. Arif - Project Lead at Whiteboard inside Glass Meeting Room */}
       {isArifActive && (
-        <group position={[8.9, 0, 0.55]}>
+        <group position={[13.2, 0, 1.2]}>
           <Character
             position={[0, 0, 0]}
             sitting={false}
@@ -217,48 +220,48 @@ export const Characters = React.memo(function Characters({ teamMembers = [] }) {
         </group>
       )}
 
-      {/* 5. Bayu */}
+      {/* 5. Bayu - Seated at Desk 3 (Workstation Wing) */}
       {isBayuActive && (
-        <group position={[5.4, 0, 6.1]}>
+        <group position={[2.6, 0, 5.55]}>
           <Character
             position={[0, 0, 0]}
-            sitting={false}
-            activity="talking"
-            lookDirection={Math.PI / 4}
+            sitting={true}
+            activity="typing"
+            lookDirection={Math.PI}
             skinColor={bayu?.skinColor || "#d9a273"}
             hairColor={bayu?.hairColor || "#2a2236"}
             shirtColor={bayu?.shirtColor || "#f26a5b"}
             pantsColor={bayu?.pantsColor || "#3b4468"}
             name={bayu?.name || "Bayu"}
-            tip={`${bayu?.name || 'Bayu'} – ${bayu?.role || 'Product'} | ${bayu?.description || 'Berdiskusi soal jadwal rilis'}`}
+            tip={`${bayu?.name || 'Bayu'} – ${bayu?.role || 'Product'} | ${bayu?.description || 'Mengembangkan fitur aplikasi'}`}
           />
-          <SpeechBubble characterId="bayu" position={[0, 2.2, 0]} delay={2400} />
+          <SpeechBubble characterId="bayu" position={[0, 1.9, 0]} delay={2400} />
         </group>
       )}
 
-      {/* 6. Sinta */}
+      {/* 6. Sinta - Relaxing/Brainstorming in Breakout Lounge */}
       {isSintaActive && (
-        <group position={[6.7, 0, 6.4]}>
+        <group position={[12.5, 0, 8.7]}>
           <Character
             position={[0, 0, 0]}
-            sitting={false}
+            sitting={true}
             activity="talking"
-            lookDirection={-Math.PI * 0.75}
+            lookDirection={Math.PI}
             skinColor={sinta?.skinColor || "#f2c9a0"}
             hairColor={sinta?.hairColor || "#5a3425"}
             shirtColor={sinta?.shirtColor || "#8a63d2"}
             pantsColor={sinta?.pantsColor || "#2f3558"}
             longHair={true}
             name={sinta?.name || "Sinta"}
-            tip={`${sinta?.name || 'Sinta'} – ${sinta?.role || 'Marketing'} | ${sinta?.description || 'Berdiskusi soal kampanye'}`}
+            tip={`${sinta?.name || 'Sinta'} – ${sinta?.role || 'Marketing'} | ${sinta?.description || 'Berdiskusi strategi kampanye di lounge'}`}
           />
-          <SpeechBubble characterId="sinta" position={[0, 2.2, 0]} delay={3200} />
+          <SpeechBubble characterId="sinta" position={[0, 1.9, 0]} delay={3200} />
         </group>
       )}
 
-      {/* 7. Mira - Seated at Meeting Table West Chair */}
+      {/* 7. Mira - Seated at Meeting Table in Glass Meeting Room */}
       {isMiraActive && (
-        <group position={[7.8, 0, 4.1]}>
+        <group position={[11.6, 0, 3.4]}>
           <Character
             position={[0, 0, 0]}
             sitting={true}
@@ -270,7 +273,7 @@ export const Characters = React.memo(function Characters({ teamMembers = [] }) {
             pantsColor={mira?.pantsColor || "#3b4468"}
             longHair={true}
             name={mira?.name || "Mira"}
-            tip={`${mira?.name || 'Mira'} – ${mira?.role || 'Sales'} | ${mira?.description || 'Telepon dengan klien'}`}
+            tip={`${mira?.name || 'Mira'} – ${mira?.role || 'Sales'} | ${mira?.description || 'Telepon dengan klien di ruang rapat'}`}
           />
           <SpeechBubble characterId="mira" position={[0, 1.9, 0]} delay={4000} />
         </group>

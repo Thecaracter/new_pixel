@@ -1,4 +1,5 @@
 import React from 'react';
+import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 
 function TooltipTrigger({ name, role, task, position = [0, 1.2, 0] }) {
@@ -242,25 +243,15 @@ function MeetingArea({ position = [9.4, 0, 4.1] }) {
       {chairAngles.map((angle, idx) => {
         const cx = Math.cos(angle) * chairRadius;
         const cz = Math.sin(angle) * chairRadius;
+        // Exact angle pointing from chair towards the table center
+        const targetAngle = Math.atan2(-cx, -cz);
         return (
-          <group key={idx} position={[cx, 0, cz]} rotation={[0, -angle - Math.PI / 2, 0]}>
-            <mesh position={[0, 0.08, 0]}>
-              <cylinderGeometry args={[0.2, 0.2, 0.04, 8]} />
-              <meshStandardMaterial color="#555" />
-            </mesh>
-            <mesh position={[0, 0.24, 0]}>
-              <cylinderGeometry args={[0.03, 0.03, 0.28, 8]} />
-              <meshStandardMaterial color="#666" />
-            </mesh>
-            <mesh position={[0, 0.38, 0]} castShadow>
-              <cylinderGeometry args={[0.26, 0.26, 0.08, 16]} />
-              <meshStandardMaterial color="#f26a5b" roughness={0.6} />
-            </mesh>
-            <mesh position={[0, 0.62, 0.18]} castShadow>
-              <boxGeometry args={[0.36, 0.42, 0.06]} />
-              <meshStandardMaterial color="#f26a5b" roughness={0.6} />
-            </mesh>
-          </group>
+          <Chair
+            key={`mchair-${idx}`}
+            position={[cx, 0, cz]}
+            rotation={[0, targetAngle + Math.PI, 0]}
+            color={idx % 2 === 0 ? '#4a5fc1' : '#2fa7a0'}
+          />
         );
       })}
 
@@ -560,36 +551,49 @@ function PrinterCabinet({ position = [0.5, 0, 7.4] }) {
   );
 }
 
-// Pantry & Water Dispenser
-function PantryCorner({ position = [2.0, 0, 8.4] }) {
+// Clean & Minimalist Pantry Corner
+function PantryCorner({ position = [2.4, 0, 9.4] }) {
   return (
-    <group position={position}>
-      {/* Pantry Counter Cabinet */}
+    <group position={position} name="pantry-corner">
+      {/* Counter Cabinet */}
       <mesh position={[0, 0.45, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.6, 0.9, 0.6]} />
-        <meshStandardMaterial color="#e9eef7" roughness={0.6} />
+        <boxGeometry args={[2.2, 0.9, 0.7]} />
+        <meshStandardMaterial color="#f8fafc" roughness={0.4} />
       </mesh>
-      {/* Water Dispenser Base */}
-      <mesh position={[0, 1.05, 0]} castShadow>
-        <boxGeometry args={[0.35, 0.3, 0.35]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.3} />
+      {/* Wood Countertop */}
+      <mesh position={[0, 0.92, 0]} castShadow receiveShadow>
+        <boxGeometry args={[2.3, 0.06, 0.76]} />
+        <meshStandardMaterial color="#e2ac72" roughness={0.6} />
       </mesh>
-      {/* Blue Water Gallon */}
-      <mesh position={[0, 1.35, 0]} castShadow>
-        <cylinderGeometry args={[0.14, 0.14, 0.38, 16]} />
-        <meshStandardMaterial
-          color="#8fd3ff"
-          transparent
-          opacity={0.85}
-          roughness={0.1}
-          metalness={0.1}
-        />
-      </mesh>
+
+      {/* Coffee Machine */}
+      <group position={[-0.5, 0.95, 0]}>
+        <mesh position={[0, 0.16, 0]} castShadow>
+          <boxGeometry args={[0.38, 0.32, 0.34]} />
+          <meshStandardMaterial color="#334155" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 0.34, 0]} castShadow>
+          <cylinderGeometry args={[0.04, 0.035, 0.07, 12]} />
+          <meshStandardMaterial color="#f43f5e" />
+        </mesh>
+      </group>
+
+      {/* Water Dispenser with Gallon */}
+      <group position={[0.5, 0.95, 0]}>
+        <mesh position={[0, 0.16, 0]} castShadow>
+          <boxGeometry args={[0.3, 0.32, 0.3]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.3} />
+        </mesh>
+        <mesh position={[0, 0.44, 0]} castShadow>
+          <cylinderGeometry args={[0.11, 0.11, 0.28, 16]} />
+          <meshStandardMaterial color="#38bdf8" transparent opacity={0.8} />
+        </mesh>
+      </group>
 
       <TooltipTrigger
         name="Pantry"
         role="Area Minum"
-        task="Isi ulang air mineral, teh hangat, dan kopi segar"
+        task="Air mineral, teh hangat, dan kopi segar"
         position={[0, 1.4, 0]}
       />
     </group>
@@ -598,72 +602,86 @@ function PantryCorner({ position = [2.0, 0, 8.4] }) {
 
 /**
  * Main Furniture Component
- * Combines all office furniture into a single high-performance static scene graph.
+ * Clean, spacious, and uncluttered layout.
  */
 export const Furniture = React.memo(function Furniture() {
   return (
-    <group>
+    <group name="spacious-office-furniture">
+      {/* ===================== ZONE 1: WORKSTATION WING ===================== */}
       {/* Desk 1: Rina */}
       <Desk
-        position={[2.3, 0, 2.2]}
+        position={[2.6, 0, 2.0]}
         mugColor="#f26a5b"
         hasPaper={true}
         label="Meja 01 — Rina"
         role="Akuntan"
         task="Mengetik laporan bulanan & verifikasi invoice"
       />
-      <Chair position={[2.3, 0, 2.75]} color="#2fa7a0" />
+      <Chair position={[2.6, 0, 2.95]} color="#2fa7a0" />
 
-      {/* Desk 2: Eko */}
+      {/* Desk 2: Dimas */}
       <Desk
-        position={[2.3, 0, 5.5]}
-        mugColor="#4a5fc1"
-        hasPaper={false}
-        label="Meja 02 — Eko"
-        role="Admin"
-        task="Sedang berkeliling mengantar dokumen"
+        position={[6.6, 0, 2.0]}
+        mugColor="#8a63d2"
+        hasPaper={true}
+        label="Meja 02 — Dimas"
+        role="Desainer"
+        task="Menyusun mockup UI/UX & aset visual"
       />
-      <Chair position={[2.3, 0, 6.05]} color="#f2b84b" />
+      <Chair position={[6.6, 0, 2.95]} color="#8a63d2" />
 
-      {/* Desk 3: Dimas */}
+      {/* Desk 3: Bayu */}
       <Desk
-        position={[5.8, 0, 2.2]}
+        position={[2.6, 0, 4.6]}
         mugColor="#f26a5b"
         hasPaper={true}
-        label="Meja 03 — Dimas"
-        role="Desainer"
-        task="Menyusun mockup UI/UX versi 3"
+        label="Meja 03 — Bayu"
+        role="Frontend Engineer"
+        task="Implementasi antarmuka dan interaksi fitur"
       />
-      <Chair position={[5.8, 0, 2.75]} color="#f26a5b" />
+      <Chair position={[2.6, 0, 5.55]} color="#f26a5b" />
 
-      {/* Meeting Area */}
-      <MeetingArea position={[9.4, 0, 4.1]} />
+      {/* Desk 4: Eko / Shared Workstation */}
+      <Desk
+        position={[6.6, 0, 4.6]}
+        mugColor="#4a5fc1"
+        hasPaper={false}
+        label="Meja 04 — Staging"
+        role="Admin / Shared"
+        task="Meja kelengkapan berkas & operasional"
+      />
+      <Chair position={[6.6, 0, 5.55]} color="#f2b84b" />
+
+      {/* ===================== ZONE 2: GLASS MEETING ROOM ===================== */}
+      {/* Meeting Table & 6 Chairs inside Glass Partition */}
+      <MeetingArea position={[13.2, 0, 3.4]} />
+
+      {/* Whiteboard inside Glass Meeting Room */}
+      <Whiteboard position={[13.2, 2.3, 0.05]} />
+
+      {/* Wall Poster inside Glass Meeting Room */}
+      <WallPoster position={[15.4, 2.3, 0.05]} />
+
+      {/* ===================== ZONE 3: BREAKOUT LOUNGE & LIBRARY ===================== */}
+      {/* Lounge Sofa & Coffee Table */}
+      <LoungeArea position={[13.0, 0, 8.8]} />
 
       {/* Bookshelf */}
       <Bookshelf position={[0.4, 0, 0.8]} />
 
-      {/* Whiteboard */}
-      <Whiteboard position={[8.8, 2.3, 0.05]} />
+      {/* Wall Clock above corridor */}
+      <WallClock position={[8.0, 3.2, 0.05]} />
 
-      {/* Wall Clock */}
-      <WallClock position={[6.6, 3.2, 0.05]} />
-
-      {/* Wall Poster */}
-      <WallPoster position={[11.2, 2.3, 0.05]} />
-
-      {/* Plants */}
-      <Plant position={[11.4, 0, 0.8]} scale={1.2} />
-      <Plant position={[11.3, 0, 8.4]} scale={1.0} />
-      <Plant position={[6.3, 0, 8.5]} scale={0.85} />
-
-      {/* Lounge Sofa */}
-      <LoungeArea position={[9.9, 0, 7.8]} />
-
+      {/* ===================== ZONE 4: PANTRY & REFRESHMENTS ===================== */}
       {/* Printer Cabinet */}
-      <PrinterCabinet position={[0.5, 0, 7.4]} />
+      <PrinterCabinet position={[0.5, 0, 8.4]} />
 
-      {/* Pantry */}
-      <PantryCorner position={[2.0, 0, 8.4]} />
+      {/* Clean Pantry Counter */}
+      <PantryCorner position={[2.4, 0, 9.4]} />
+
+      {/* ===================== DECORATIVE INDOOR PLANTS ===================== */}
+      <Plant position={[15.3, 0, 0.8]} scale={1.1} />
+      <Plant position={[9.7, 0, 6.8]} scale={0.9} />
     </group>
   );
 });
