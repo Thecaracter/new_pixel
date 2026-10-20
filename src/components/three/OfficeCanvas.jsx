@@ -29,7 +29,7 @@ function CameraAligner() {
  * Pure 3D Isometric Office Canvas
  * Completely stable, perfectly centered, no wall clipping, no scroll hijacking.
  */
-export function OfficeCanvas() {
+export function OfficeCanvas({ teamMembers = [] }) {
   return (
     <div
       style={{
@@ -78,9 +78,9 @@ export function OfficeCanvas() {
 
           {/* Sunlight directional lamp from window direction */}
           <directionalLight
-            position={[16, 24, 12]}
+            position={[18, 24, 14]}
             color="#fff3dc"
-            intensity={1.25}
+            intensity={1.8}
             castShadow
             shadow-mapSize-width={1024}
             shadow-mapSize-height={1024}
@@ -112,7 +112,7 @@ export function OfficeCanvas() {
           <group name="office-root">
             <OfficeRoom />
             <Furniture />
-            <Characters />
+            <Characters teamMembers={teamMembers} />
             <CatMochi />
             <Particles />
           </group>

@@ -3,6 +3,10 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
+import fs from 'fs';
+import { orchestrate, clearSession } from './agents/orchestrator.js';
+import mcpServer from './mcp/server.js';
+import { getAllAgents } from './agents/definitions.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const __rootdir = path.resolve(__dirname, '..');
@@ -44,23 +48,57 @@ export function resetSessions() {
   currentLeaderSessionId = null;
 }
 
-/**
- * Team members available in the virtual office
- */
-export const TEAM_MEMBERS = [
-  { id: 'arif', name: 'Arif', role: 'Project Lead / Coordinator', description: 'Memimpin koordinasi sprint, requirement elicitation, dan breakdown tugas' },
-  { id: 'rina', name: 'Rina', role: 'Finance / Accountant', description: 'Menghitung estimasi budget, invoice, dan laporan keuangan' },
-  { id: 'dimas', name: 'Dimas', role: 'UI/UX Designer', description: 'Membuat wireframe, desain antarmuka, mockup, dan aset visual' },
-  { id: 'bayu', name: 'Bayu', role: 'Product / Frontend Engineer', description: 'Implementasi antarmuka, user flow, dan integrasi fitur aplikasi' },
-  { id: 'sinta', name: 'Sinta', role: 'Marketing / Growth', description: 'Menyusun strategi campaign promosi, copy pemasaran, dan go-to-market' },
-  { id: 'mira', name: 'Mira', role: 'Sales / Client Relations', description: 'Komunikasi kebutuhan klien, pitching, dan relationship management' },
-  { id: 'eko', name: 'Eko', role: 'Operations / Admin Support', description: 'Manajemen operasional, kelengkapan administrasi, dan alur dokumen' },
+const TEAM_FILE = path.join(__rootdir, 'data', 'team.json');
+
+const DEFAULT_TEAM_MEMBERS = [
+  { id: 'arif', name: 'Arif', role: 'Project Lead / Coordinator', description: 'Memimpin koordinasi sprint, requirement elicitation, dan breakdown tugas', active: true, model: null, shirtColor: '#4a5fc1', hairColor: '#2a2236', skinColor: '#f2c9a0', pantsColor: '#2f3558', isDefault: true },
+  { id: 'rina', name: 'Rina', role: 'Finance / Accountant', description: 'Menghitung estimasi budget, invoice, dan laporan keuangan', active: true, model: null, shirtColor: '#2fa7a0', hairColor: '#3a2a24', skinColor: '#f2c9a0', pantsColor: '#3b4468', isDefault: true },
+  { id: 'dimas', name: 'Dimas', role: 'UI/UX Designer', description: 'Membuat wireframe, desain antarmuka, mockup, dan aset visual', active: true, model: null, shirtColor: '#8a63d2', hairColor: '#1f1b2e', skinColor: '#d9a273', pantsColor: '#3b4468', isDefault: true },
+  { id: 'bayu', name: 'Bayu', role: 'Product / Frontend Engineer', description: 'Implementasi antarmuka, user flow, dan integrasi fitur aplikasi', active: true, model: null, shirtColor: '#f26a5b', hairColor: '#2a2236', skinColor: '#d9a273', pantsColor: '#3b4468', isDefault: true },
+  { id: 'sinta', name: 'Sinta', role: 'Marketing / Growth', description: 'Menyusun strategi campaign promosi, copy pemasaran, dan go-to-market', active: true, model: null, shirtColor: '#8a63d2', hairColor: '#5a3425', skinColor: '#f2c9a0', pantsColor: '#2f3558', isDefault: true },
+  { id: 'mira', name: 'Mira', role: 'Sales / Client Relations', description: 'Komunikasi kebutuhan klien, pitching, dan relationship management', active: true, model: null, shirtColor: '#f2b84b', hairColor: '#4a2c2a', skinColor: '#f2c9a0', pantsColor: '#3b4468', isDefault: true },
+  { id: 'eko', name: 'Eko', role: 'Operations / Admin Support', description: 'Manajemen operasional, kelengkapan administrasi, dan alur dokumen', active: true, model: null, shirtColor: '#2f9a92', hairColor: '#2a2236', skinColor: '#c68f64', pantsColor: '#3b4468', isDefault: true },
 ];
 
+export function loadTeamMembersFromDisk() {
+  try {
+    if (fs.existsSync(TEAM_FILE)) {
+      const content = fs.readFileSync(TEAM_FILE, 'utf-8');
+      const data = JSON.parse(content);
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    }
+  } catch (err) {
+    console.error('Error reading data/team.json:', err.message);
+  }
+  return [...DEFAULT_TEAM_MEMBERS];
+}
+
+export function saveTeamMembersToDisk(members) {
+  try {
+    fs.mkdirSync(path.dirname(TEAM_FILE), { recursive: true });
+    fs.writeFileSync(TEAM_FILE, JSON.stringify(members, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error writing data/team.json:', err.message);
+  }
+}
+
 /**
- * System instruction prompt for Leader Mode (Arif - Project Lead)
+ * Team members available in the virtual office (mutable reference)
  */
-export const LEADER_SYSTEM_PROMPT = `Anda adalah Arif, Project Lead di Pixel Works Virtual Office.
+export const TEAM_MEMBERS = loadTeamMembersFromDisk();
+
+/**
+ * Dynamically builds system instruction prompt for Leader Mode (Arif - Project Lead)
+ * reflecting active team members and their roles.
+ */
+export function buildLeaderSystemPrompt(customMembers = null) {
+  const members = customMembers || TEAM_MEMBERS.filter(m => m.active !== false);
+  const rosterListing = members.map(m => `- ${m.name} (${m.role}): ${m.description || ''}`).join('\n');
+  const allowedNames = members.map(m => m.name).join('/');
+
+  return `Anda adalah Arif, Project Lead di Pixel Works Virtual Office.
 Tugas utama Anda adalah menjadi Koordinator Tim yang bertanggung jawab, teliti, realistis, dan anti-halusinasi.
 Selalu bertindak dan menjawab sebagai Arif (Project Lead), BUKAN sebagai OpenCode, model AI umum, atau asisten generik.
 
@@ -74,20 +112,15 @@ ATURAN UTAMA:
    - Sinta adalah anggota tim yang bertanggung jawab atas Marketing / Growth (campaign promosi, go-to-market, copywriting).
    - Dimas adalah UI/UX Designer, Bayu adalah Frontend Engineer, Rina adalah Finance, Mira adalah Sales, Eko adalah Ops/Admin.
    - Jika user meminta menugaskan Sinta (contoh: "Arif, tugaskan Sinta untuk membuat campaign login"), akuilah Sinta sebagai anggota tim yang valid.
+   - Hanya delegasikan tugas kepada anggota yang berstatus AKTIF di daftar di bawah.
 6. ALUR KOORDINASI:
    - Jika user mengajukan ide, project, atau permintaan/penugasan:
      - Evaluasi apakah informasi project sudah lengkap (Tujuan/Goal, Scope/Ruang Lingkup, Deliverables/Output, Batasan/Tech Stack/Deadline).
      - JIKA BELUM CUKUP LENGKAP: Masuk fase "clarifying". Tanyakan poin-poin yang belum jelas secara spesifik (tujuan, batasan, target output, dsb). JANGAN membuat rencana final dulu.
-     - JIKA SUDAH CUKUP LENGKAP: Masuk fase "planned" atau "awaiting_confirmation". Buat rencana kerja terstruktur dan pecah menjadi tugas-tugas spesifik untuk anggota tim yang relevan (Arif, Rina, Dimas, Bayu, Sinta, Mira, Eko). Minta konfirmasi eksplisit dari user sebelum ada langkah eksekusi apapun.
+     - JIKA SUDAH CUKUP LENGKAP: Masuk fase "planned" atau "awaiting_confirmation". Buat rencana kerja terstruktur dan pecah menjadi tugas-tugas spesifik untuk anggota tim yang relevan (${allowedNames}). Minta konfirmasi eksplisit dari user sebelum ada langkah eksekusi apapun.
 
 ANGGOTA TIM YANG TERSEDIA:
-- Arif (Project Lead / Coordinator): koordinasi, requirement, breakdown
-- Rina (Finance / Accountant): estimasi biaya, budget, laporan keuangan
-- Dimas (UI/UX Designer): wireframe, visual design, mockup, design system
-- Bayu (Product / Frontend Engineer): implementasi UI, kode fitur, integrasi sistem
-- Sinta (Marketing / Growth): strategi pemasaran, materi promosi, go-to-market
-- Mira (Sales / Client Relations): penawaran klien, riset pasar/klien
-- Eko (Operations / Admin Support): operasional, alur dokumen, logistik
+${rosterListing}
 
 FORMAT OUTPUT HARUS JSON VALID DALAM BLOK KODE \`\`\`json ... \`\`\` ATAU RAW JSON DENGAN STRUKTUR:
 {
@@ -104,7 +137,7 @@ FORMAT OUTPUT HARUS JSON VALID DALAM BLOK KODE \`\`\`json ... \`\`\` ATAU RAW JS
       {
         "id": "TASK-1",
         "title": "Judul tugas",
-        "assignee": "Nama anggota tim (Arif/Rina/Dimas/Bayu/Sinta/Mira/Eko)",
+        "assignee": "Nama anggota tim (${allowedNames})",
         "role": "Peran anggota",
         "description": "Deskripsi tugas spesifik",
         "status": "pending"
@@ -117,6 +150,12 @@ FORMAT OUTPUT HARUS JSON VALID DALAM BLOK KODE \`\`\`json ... \`\`\` ATAU RAW JS
 Catatan:
 - Jika fase adalah "clarifying", "questions" wajib berisi daftar pertanyaan, "plan" boleh null atau draft parsial, dan "confirmation_prompt" null.
 - Jika fase adalah "planned" atau "awaiting_confirmation", "questions" kosong [], "plan.tasks" wajib terstruktur, dan "confirmation_prompt" wajib meminta persetujuan user. Status setiap task wajib "pending", tidak boleh "done" atau "in_progress".`;
+}
+
+/**
+ * Static system instruction prompt for Leader Mode (Arif - Project Lead) for test contracts
+ */
+export const LEADER_SYSTEM_PROMPT = buildLeaderSystemPrompt(DEFAULT_TEAM_MEMBERS);
 
 /**
  * Extracts and parses structured JSON from model reply
@@ -371,6 +410,14 @@ app.post('/api/chat', async (req, res) => {
   }
   let selectedModel = model || currentModel;
   
+  // If in leader mode and arif has an assigned model, prefer it unless user explicitly chose a model
+  if (isLeaderMode && !model) {
+    const arifMember = TEAM_MEMBERS.find(m => m.id === 'arif');
+    if (arifMember && arifMember.model) {
+      selectedModel = arifMember.model;
+    }
+  }
+
   // When model changes, reset session to avoid incompatibility
   let nextSessionId = sessionId;
   if (selectedModel && selectedModel !== currentModel) {
@@ -410,7 +457,8 @@ app.post('/api/chat', async (req, res) => {
       const sanitizedUserMessage = trimmedMessage
         .replace(/\[\/?(?:SYSTEM INSTRUCTION|USER REQUEST|INSTRUCTION)\]/gi, '[REDACTED]');
 
-      promptToSend = `[SYSTEM INSTRUCTION]\n${LEADER_SYSTEM_PROMPT}\n[/SYSTEM INSTRUCTION]\n\n[USER REQUEST]\n${sanitizedUserMessage}\n[/USER REQUEST]`;
+      const dynamicLeaderPrompt = buildLeaderSystemPrompt();
+      promptToSend = `[SYSTEM INSTRUCTION]\n${dynamicLeaderPrompt}\n[/SYSTEM INSTRUCTION]\n\n[USER REQUEST]\n${sanitizedUserMessage}\n[/USER REQUEST]`;
     }
 
     // Add '-' so opencode reads prompt from stdin
@@ -564,14 +612,206 @@ function executeOpencode(args, prompt) {
   });
 }
 
+/**
+ * POST /api/orchestrate
+ * Multi-agent orchestration endpoint — Arif delegates to agents, they discuss, compile results.
+ * Accepts: { message: string, sessionId?: string, model?: string }
+ * Returns: { phase, summary, delegations, agentResults, discussions, plan, questions, ... }
+ */
+app.post('/api/orchestrate', async (req, res) => {
+  const { message, sessionId, model } = req.body;
+
+  if (!message || typeof message !== 'string' || !message.trim()) {
+    return res.status(400).json({
+      error: 'Invalid request',
+      details: 'message must be a non-empty string'
+    });
+  }
+
+  const selectedModel = model || currentModel;
+
+  try {
+    console.log('\n🚀 Orchestration started...');
+    const result = await orchestrate(OPENCODE_BIN, selectedModel, message.trim(), sessionId);
+
+    return res.json({
+      ...result,
+      reply: result.summary,
+      model: selectedModel || null,
+      mode: 'orchestrator',
+      roster: TEAM_MEMBERS
+    });
+  } catch (error) {
+    console.error('Orchestration error:', error);
+    res.status(503).json({
+      error: 'Orchestration failed',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/agents
+ * Returns available agents and their capabilities
+ */
+app.get('/api/agents', (req, res) => {
+  const agents = getAllAgents().map(a => ({
+    id: a.id,
+    name: a.name,
+    role: a.role,
+    emoji: a.emoji,
+    domains: a.domains,
+    description: a.description,
+    tools: a.domains.flatMap(d => mcpServer.getToolsForDomain(d))
+  }));
+  res.json({ agents });
+});
+
+/**
+ * GET /api/mcp/tools
+ * Returns all available MCP tools, optionally filtered by domain
+ */
+app.get('/api/mcp/tools', (req, res) => {
+  const { domain } = req.query;
+  const tools = mcpServer.listTools(domain || null);
+  res.json({ tools, domains: mcpServer.listDomains() });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Team roster endpoint
+/**
+ * Team Roster Management API (CRUD)
+ */
+
+// GET /api/team — List all team members
 app.get('/api/team', (req, res) => {
+  const { active } = req.query;
+  if (active === 'true') {
+    return res.json({ members: TEAM_MEMBERS.filter(m => m.active !== false) });
+  }
   res.json({ members: TEAM_MEMBERS });
+});
+
+// POST /api/team — Add new agent / team member
+app.post('/api/team', (req, res) => {
+  const { name, role, description, model, active, shirtColor, hairColor, skinColor, pantsColor } = req.body;
+
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ error: 'Validation error', details: 'name is required' });
+  }
+  if (!role || typeof role !== 'string' || !role.trim()) {
+    return res.status(400).json({ error: 'Validation error', details: 'role is required' });
+  }
+
+  // Validate model format if specified
+  if (model && !/^[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_.@-]+)+$/.test(model)) {
+    return res.status(400).json({
+      error: 'Invalid model',
+      details: 'model must be in format provider/model'
+    });
+  }
+
+  // Generate unique ID based on name
+  let baseId = name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  if (!baseId) baseId = 'agent';
+  let candidateId = baseId;
+  let counter = 1;
+  while (TEAM_MEMBERS.some(m => m.id === candidateId)) {
+    candidateId = `${baseId}_${counter++}`;
+  }
+
+  const newMember = {
+    id: candidateId,
+    name: name.trim(),
+    role: role.trim(),
+    description: description && typeof description === 'string' ? description.trim() : `Bertanggung jawab atas ${role.trim()}`,
+    active: active !== undefined ? Boolean(active) : true,
+    model: model && typeof model === 'string' && model.trim() ? model.trim() : null,
+    shirtColor: shirtColor || '#38bdf8',
+    hairColor: hairColor || '#1e293b',
+    skinColor: skinColor || '#f2c9a0',
+    pantsColor: pantsColor || '#334155',
+    isDefault: false
+  };
+
+  TEAM_MEMBERS.push(newMember);
+  saveTeamMembersToDisk(TEAM_MEMBERS);
+
+  res.status(201).json({ success: true, member: newMember });
+});
+
+// PUT /api/team/:id — Update existing agent (status active/non-aktif, model, details)
+app.put('/api/team/:id', (req, res) => {
+  const { id } = req.params;
+  const index = TEAM_MEMBERS.findIndex(m => m.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Not found', details: `Team member "${id}" not found` });
+  }
+
+  const existing = TEAM_MEMBERS[index];
+  const { name, role, description, model, active, shirtColor, hairColor, skinColor, pantsColor } = req.body;
+
+  // Validate model format if specified
+  if (model !== undefined && model !== null && model !== '') {
+    if (!/^[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_.@-]+)+$/.test(model)) {
+      return res.status(400).json({
+        error: 'Invalid model',
+        details: 'model must be in format provider/model'
+      });
+    }
+  }
+
+  const updatedMember = {
+    ...existing,
+    ...(name !== undefined && { name: name.trim() }),
+    ...(role !== undefined && { role: role.trim() }),
+    ...(description !== undefined && { description: description.trim() }),
+    ...(model !== undefined && { model: model && model.trim() ? model.trim() : null }),
+    ...(active !== undefined && { active: Boolean(active) }),
+    ...(shirtColor !== undefined && { shirtColor }),
+    ...(hairColor !== undefined && { hairColor }),
+    ...(skinColor !== undefined && { skinColor }),
+    ...(pantsColor !== undefined && { pantsColor }),
+  };
+
+  TEAM_MEMBERS[index] = updatedMember;
+  saveTeamMembersToDisk(TEAM_MEMBERS);
+
+  res.json({ success: true, member: updatedMember });
+});
+
+// DELETE /api/team/:id — Deactivate or remove agent
+app.delete('/api/team/:id', (req, res) => {
+  const { id } = req.params;
+  const index = TEAM_MEMBERS.findIndex(m => m.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Not found', details: `Team member "${id}" not found` });
+  }
+
+  const member = TEAM_MEMBERS[index];
+  const isDefault = member.isDefault || ['arif', 'rina', 'dimas', 'bayu', 'sinta', 'mira', 'eko'].includes(member.id);
+
+  if (isDefault) {
+    // For default members, set active = false to preserve system integrity
+    member.active = false;
+    saveTeamMembersToDisk(TEAM_MEMBERS);
+    return res.json({ success: true, action: 'deactivated', member });
+  }
+
+  // For custom members, delete from roster
+  TEAM_MEMBERS.splice(index, 1);
+  saveTeamMembersToDisk(TEAM_MEMBERS);
+  res.json({ success: true, action: 'deleted', id });
+});
+
+// Any unmatched /api/* route returns JSON 404, never HTML
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ error: 'Endpoint not found', path: req.originalUrl });
 });
 
 // 404 fallback for SPA

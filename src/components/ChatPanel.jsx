@@ -18,13 +18,22 @@ const DEFAULT_ROSTER = [
  * Connects to local OpenCode backend via /api/chat endpoint
  * Keeps session state and message history completely isolated between modes
  */
-export function ChatPanel() {
-  const [mode, setMode] = useState('leader'); // 'leader' | 'chat'
+export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
+  const [mode, setMode] = useState('leader'); // 'leader' | 'chat' | 'orchestrator'
   const [chatMessages, setChatMessages] = useState([]);
   const [leaderMessages, setLeaderMessages] = useState([]);
+  const [orchestratorMessages, setOrchestratorMessages] = useState([]);
   const [chatSessionId, setChatSessionId] = useState(null);
   const [leaderSessionId, setLeaderSessionId] = useState(null);
-  const [teamMembers, setTeamMembers] = useState(DEFAULT_ROSTER);
+  const [orchestratorSessionId, setOrchestratorSessionId] = useState(null);
+  const [teamMembers, setTeamMembers] = useState(externalTeamMembers || DEFAULT_ROSTER);
+
+  // Synchronize when external roster updates
+  useEffect(() => {
+    if (Array.isArray(externalTeamMembers) && externalTeamMembers.length > 0) {
+      setTeamMembers(externalTeamMembers);
+    }
+  }, [externalTeamMembers]);
 
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,6 +64,10 @@ export function ChatPanel() {
         if (!response.ok) {
           const text = await response.text();
           throw new Error(`HTTP ${response.status}: ${text || response.statusText}`);
+        }
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error('Backend mengembalikan format non-JSON (pastikan backend aktif: npm run dev)');
         }
         const data = await response.json();
         setAvailableModels(data.models || []);
@@ -97,7 +110,7 @@ export function ChatPanel() {
   }, []);
 
   // Active messages based on mode
-  const currentMessages = mode === 'leader' ? leaderMessages : chatMessages;
+  const currentMessages = mode === 'leader' ? leaderMessages : mode === 'orchestrator' ? orchestratorMessages : chatMessages;
 
   // Auto-scroll to bottom when messages update
   useEffect(() => {
@@ -158,6 +171,9 @@ export function ChatPanel() {
     if (mode === 'leader') {
       setLeaderSessionId(null);
       setLeaderMessages([]);
+    } else if (mode === 'orchestrator') {
+      setOrchestratorSessionId(null);
+      setOrchestratorMessages([]);
     } else {
       setChatSessionId(null);
       setChatMessages([]);
@@ -173,12 +189,15 @@ export function ChatPanel() {
 
     const currentMode = mode;
     const isLeader = currentMode === 'leader';
-    const activeSessionId = isLeader ? leaderSessionId : chatSessionId;
+    const isOrchestrator = currentMode === 'orchestrator';
+    const activeSessionId = isLeader ? leaderSessionId : isOrchestrator ? orchestratorSessionId : chatSessionId;
 
     // Add user message to active thread
     const userMessage = { type: 'user', text: trimmedInput, mode: currentMode };
     if (isLeader) {
       setLeaderMessages(prev => [...prev, userMessage]);
+    } else if (isOrchestrator) {
+      setOrchestratorMessages(prev => [...prev, userMessage]);
     } else {
       setChatMessages(prev => [...prev, userMessage]);
     }
@@ -188,28 +207,41 @@ export function ChatPanel() {
     setLoading(true);
 
     try {
+      let endpoint = '/api/chat';
       const payload = {
         message: trimmedInput,
         sessionId: activeSessionId,
         model: selectedModel,
       };
 
-      // Explicitly send mode: "leader" when in Leader Mode, omit or chat otherwise
       if (isLeader) {
         payload.mode = 'leader';
+      } else if (isOrchestrator) {
+        endpoint = '/api/orchestrate';
       }
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.details || data.error || 'Chat service error');
+        const contentType = response.headers.get('content-type') || '';
+        let errMessage = 'Chat service error';
+        if (contentType.includes('application/json')) {
+          const data = await response.json().catch(() => ({}));
+          errMessage = data.details || data.error || errMessage;
+        } else {
+          const text = await response.text().catch(() => '');
+          errMessage = text.includes('<!DOCTYPE') ? 'Backend mengembalikan respons HTML (perlu restart backend: npm run dev)' : (text || `HTTP ${response.status}`);
+        }
+        throw new Error(errMessage);
+      }
+
+      const responseContentType = response.headers.get('content-type') || '';
+      if (!responseContentType.includes('application/json')) {
+        throw new Error('Backend tidak merespons JSON (pastikan backend direstart)');
       }
 
       const data = await response.json();
@@ -218,18 +250,37 @@ export function ChatPanel() {
       if (data.sessionId) {
         if (isLeader) {
           setLeaderSessionId(data.sessionId);
+        } else if (isOrchestrator) {
+          setOrchestratorSessionId(data.sessionId);
         } else {
           setChatSessionId(data.sessionId);
         }
       }
 
-      // Update current model if server reports one
       if (data.model) {
         setCurrentModel(data.model);
       }
 
       // Append assistant response to appropriate mode
-      if (isLeader) {
+      if (isOrchestrator) {
+        setOrchestratorMessages(prev => [
+          ...prev,
+          {
+            type: 'assistant',
+            mode: 'orchestrator',
+            text: data.reply,
+            phase: data.phase,
+            questions: data.questions || [],
+            plan: data.plan || null,
+            confirmation_prompt: data.confirmation_prompt || null,
+            delegations: data.delegations || [],
+            agentResults: data.agentResults || [],
+            discussions: data.discussions || [],
+            next_steps: data.next_steps || [],
+            roster: data.roster || teamMembers
+          }
+        ]);
+      } else if (isLeader) {
         setLeaderMessages(prev => [
           ...prev,
           {
@@ -247,11 +298,7 @@ export function ChatPanel() {
       } else {
         setChatMessages(prev => [
           ...prev,
-          {
-            type: 'assistant',
-            mode: 'chat',
-            text: data.reply
-          }
+          { type: 'assistant', mode: 'chat', text: data.reply }
         ]);
       }
     } catch (err) {
@@ -261,13 +308,12 @@ export function ChatPanel() {
 
       setError(errorText);
 
-      const errorMessage = {
-        type: 'error',
-        text: `Error: ${errorText}`
-      };
+      const errorMessage = { type: 'error', text: `Error: ${errorText}` };
 
       if (isLeader) {
         setLeaderMessages(prev => [...prev, errorMessage]);
+      } else if (isOrchestrator) {
+        setOrchestratorMessages(prev => [...prev, errorMessage]);
       } else {
         setChatMessages(prev => [...prev, errorMessage]);
       }
@@ -319,6 +365,20 @@ export function ChatPanel() {
               <span className="mode-tab-icon" aria-hidden="true">💬</span>
               <span className="mode-tab-title">Chat Biasa</span>
             </button>
+            <button
+              type="button"
+              role="tab"
+              id="tab-orchestrator-mode"
+              aria-selected={mode === 'orchestrator'}
+              aria-controls="chat-messages-panel"
+              className={`chat-mode-tab ${mode === 'orchestrator' ? 'active' : ''}`}
+              onClick={() => setMode('orchestrator')}
+              disabled={loading}
+            >
+              <span className="mode-tab-icon" aria-hidden="true">🤖</span>
+              <span className="mode-tab-title">Multi-Agent</span>
+              <span className="mode-tab-badge">MCP</span>
+            </button>
           </div>
 
           <div className="chat-controls-right">
@@ -358,8 +418,8 @@ export function ChatPanel() {
               type="button"
               className="chat-reset-button"
               onClick={handleResetSession}
-              disabled={loading || (mode === 'leader' ? !leaderSessionId && leaderMessages.length === 0 : !chatSessionId && chatMessages.length === 0)}
-              title={`Mulai sesi baru untuk ${mode === 'leader' ? 'Leader Mode' : 'Chat Biasa'}`}
+              disabled={loading || (mode === 'leader' ? !leaderSessionId && leaderMessages.length === 0 : mode === 'orchestrator' ? !orchestratorSessionId && orchestratorMessages.length === 0 : !chatSessionId && chatMessages.length === 0)}
+              title={`Mulai sesi baru untuk ${mode === 'leader' ? 'Leader Mode' : mode === 'orchestrator' ? 'Multi-Agent' : 'Chat Biasa'}`}
               aria-label="Mulai sesi baru"
             >
               🔄 Sesi Baru
@@ -373,6 +433,12 @@ export function ChatPanel() {
             <div className="banner-leader">
               <span>
                 <strong>🧑‍💼 Arif (Project Lead):</strong> Mengoordinasikan tim, mengklarifikasi kebutuhan, membagi tugas ke anggota roster, dan meminta konfirmasi sebelum eksekusi.
+              </span>
+            </div>
+          ) : mode === 'orchestrator' ? (
+            <div className="banner-leader">
+              <span>
+                <strong>🤖 Multi-Agent (MCP):</strong> Arif mendelegasikan tugas ke agent spesialis. Setiap agent punya keahlian dan tools sendiri, bisa diskusi satu sama lain.
               </span>
             </div>
           ) : (
@@ -402,9 +468,9 @@ export function ChatPanel() {
 
               {/* Roster Quick Tags */}
               <div className="leader-roster-box">
-                <span className="roster-box-title">Daftar Anggota Tim (Roster):</span>
+                <span className="roster-box-title">Daftar Anggota Tim Aktif:</span>
                 <div className="roster-tags-container">
-                  {teamMembers.map((member) => (
+                  {teamMembers.filter(m => m.active !== false).map((member) => (
                     <button
                       key={member.id}
                       type="button"
@@ -456,6 +522,36 @@ export function ChatPanel() {
             </div>
           )}
 
+          {isEmpty && mode === 'orchestrator' && (
+            <div className="chat-empty-state leader-empty-state">
+              <div className="empty-state-avatar" aria-hidden="true">🤖</div>
+              <h3 className="empty-state-title">Multi-Agent Orchestration</h3>
+              <p className="empty-state-subtitle">
+                Berikan perintah dan Arif akan mendelegasikan ke agent spesialis. Mereka akan bekerja, berdiskusi, dan mengembalikan hasil.
+              </p>
+              <div className="leader-suggestions-box">
+                <span className="suggestions-title">Contoh Perintah:</span>
+                <div className="suggestions-list">
+                  <button type="button" className="suggestion-chip"
+                    onClick={() => handleQuickAction('Buatkan rencana peluncuran produk baru termasuk budget, desain landing page, dan strategi marketing')}
+                  >
+                    🚀 Rencana peluncuran produk (budget + desain + marketing)
+                  </button>
+                  <button type="button" className="suggestion-chip"
+                    onClick={() => handleQuickAction('Siapkan pitch deck untuk klien baru di industri fintech, termasuk riset klien dan estimasi harga')}
+                  >
+                    🤝 Pitch deck + riset klien fintech
+                  </button>
+                  <button type="button" className="suggestion-chip"
+                    onClick={() => handleQuickAction('Buat timeline sprint 2 minggu untuk redesign halaman dashboard, libatkan Dimas dan Bayu')}
+                  >
+                    📋 Timeline sprint redesign dashboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Render Messages */}
           {currentMessages.map((message, index) => {
             if (message.type === 'user') {
@@ -479,16 +575,223 @@ export function ChatPanel() {
             }
 
             // Assistant Message
-            const isLeaderMessage = message.mode === 'leader' || !!message.phase;
+            const isLeaderMessage = message.mode === 'leader' || (message.mode !== 'orchestrator' && !!message.phase);
+            const isOrchestratorMessage = message.mode === 'orchestrator';
 
             return (
               <div
                 key={index}
-                className={`chat-message chat-message-assistant ${isLeaderMessage ? 'chat-message-leader' : ''}`}
+                className={`chat-message chat-message-assistant ${isLeaderMessage ? 'chat-message-leader' : ''} ${isOrchestratorMessage ? 'chat-message-leader' : ''}`}
                 role="article"
               >
-                <div className={`chat-message-content ${isLeaderMessage ? 'leader-message-wrapper' : ''}`}>
-                  {isLeaderMessage ? (
+                <div className={`chat-message-content ${(isLeaderMessage || isOrchestratorMessage) ? 'leader-message-wrapper' : ''}`}>
+                  {isOrchestratorMessage ? (
+                    <>
+                      {/* Orchestrator Header */}
+                      <div className="leader-card-header">
+                        <div className="leader-identity">
+                          <span className="leader-icon" aria-hidden="true">🤖</span>
+                          <span className="leader-name">Multi-Agent</span>
+                          <span className="leader-role-tag">MCP Orchestrator</span>
+                        </div>
+                        {message.phase && (
+                          <span className={`leader-phase-pill phase-${message.phase}`}>
+                            {message.phase === 'clarifying' && '🔍 Klarifikasi'}
+                            {message.phase === 'awaiting_confirmation' && '⏳ Menunggu Konfirmasi'}
+                            {message.phase === 'planned' && '📋 Rencana Selesai'}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Summary */}
+                      <div className="leader-summary-text">{message.text}</div>
+
+                      {/* Agent Delegations */}
+                      {Array.isArray(message.delegations) && message.delegations.length > 0 && (
+                        <div className="orchestrator-delegations">
+                          <div className="panel-heading">
+                            <span aria-hidden="true">📤</span>
+                            <strong>Delegasi ke Agent:</strong>
+                          </div>
+                          <div className="delegation-chips">
+                            {message.delegations.map((d, dIdx) => (
+                              <span key={dIdx} className="delegation-chip">
+                                <span className="delegation-emoji">{d.agentEmoji || '🤖'}</span>
+                                <span className="delegation-name">{d.agentName || d.agent_id}</span>
+                                <span className="delegation-task">{d.task}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Agent Results */}
+                      {Array.isArray(message.agentResults) && message.agentResults.length > 0 && (
+                        <div className="orchestrator-results">
+                          <div className="panel-heading">
+                            <span aria-hidden="true">📥</span>
+                            <strong>Hasil Kerja Agent:</strong>
+                          </div>
+                          {message.agentResults.map((r, rIdx) => (
+                            <div key={rIdx} className={`agent-result-card ${r.error ? 'agent-result-error' : ''}`}>
+                              <div className="agent-result-header">
+                                <span className="agent-result-emoji">{r.agentEmoji || '🤖'}</span>
+                                <strong>{r.agentName}</strong>
+                                <span className="agent-result-role">{r.agentRole}</span>
+                                {r.confidence && (
+                                  <span className={`agent-confidence confidence-${r.confidence}`}>
+                                    {r.confidence}
+                                  </span>
+                                )}
+                                {r.isDiscussionReply && (
+                                  <span className="agent-discussion-tag">💬 diskusi</span>
+                                )}
+                              </div>
+                              <div className="agent-result-body">
+                                {r.error ? `❌ ${r.error}` : r.summary}
+                              </div>
+                              {r.toolResults && r.toolResults.length > 0 && (
+                                <div className="agent-tools-used">
+                                  🔧 Tools: {r.toolResults.map(t => t.tool).join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Inter-Agent Discussions */}
+                      {Array.isArray(message.discussions) && message.discussions.length > 0 && (
+                        <div className="orchestrator-discussions">
+                          <div className="panel-heading">
+                            <span aria-hidden="true">💬</span>
+                            <strong>Diskusi Antar Agent:</strong>
+                          </div>
+                          {message.discussions.map((d, dIdx) => (
+                            <div key={dIdx} className="discussion-item">
+                              <span className="discussion-from">{d.from}</span>
+                              <span className="discussion-arrow">→</span>
+                              <span className="discussion-to">{d.to}</span>
+                              <span className="discussion-question">"{d.question}"</span>
+                              {d.answer && <div className="discussion-answer">↳ {d.answer}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Stepper questions (reuse from leader) */}
+                      {Array.isArray(message.questions) && message.questions.length > 0 && (() => {
+                        const total = message.questions.length;
+                        const step = questionStep[index] || 0;
+                        const answerKey = `${index}-${step}`;
+                        const currentAnswer = questionAnswers[answerKey] || '';
+                        const currentFilled = currentAnswer.trim().length > 0;
+                        const isLastStep = step === total - 1;
+                        const allAnswered = message.questions.every((_, qIdx) =>
+                          (questionAnswers[`${index}-${qIdx}`] || '').trim().length > 0
+                        );
+                        return (
+                          <div className="leader-questions-panel">
+                            <div className="panel-heading">
+                              <span aria-hidden="true">❓</span>
+                              <strong>Klarifikasi</strong>
+                            </div>
+                            <div className="stepper-dots">
+                              {message.questions.map((_, dotIdx) => (
+                                <span key={dotIdx} className={`stepper-dot${dotIdx === step ? ' active' : ''}${(questionAnswers[`${index}-${dotIdx}`] || '').trim() ? ' filled' : ''}`} />
+                              ))}
+                            </div>
+                            <div className="stepper-card" key={step}>
+                              <div className="stepper-question-label">Pertanyaan {step + 1} dari {total}</div>
+                              <div className="stepper-question-text">{message.questions[step]}</div>
+                              <input ref={stepperInputRef} type="text" className={`stepper-input ${currentFilled ? 'answered' : ''}`}
+                                value={currentAnswer} onChange={(e) => handleAnswerChange(answerKey, e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' && currentFilled) { e.preventDefault(); if (isLastStep && allAnswered) handleSubmitAllAnswers(index, message.questions); else handleStepNext(index, total); } }}
+                                placeholder="Ketik jawaban Anda..." disabled={loading} autoFocus />
+                            </div>
+                            <div className="stepper-nav">
+                              <button type="button" className="stepper-btn stepper-btn-back" onClick={() => handleStepBack(index)} disabled={step === 0}>← Sebelumnya</button>
+                              {isLastStep && allAnswered
+                                ? <button type="button" className="stepper-btn stepper-btn-submit" onClick={() => handleSubmitAllAnswers(index, message.questions)} disabled={loading}>📨 Kirim Semua Jawaban</button>
+                                : <button type="button" className="stepper-btn stepper-btn-next" onClick={() => handleStepNext(index, total)} disabled={!currentFilled}>Selanjutnya →</button>
+                              }
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Plan (reuse from leader) */}
+                      {message.plan && (
+                        <div className="leader-plan-panel">
+                          <div className="plan-title-bar">
+                            <span className="plan-icon" aria-hidden="true">📋</span>
+                            <span className="plan-title">{message.plan.title || 'Rencana Proyek'}</span>
+                          </div>
+                          {message.plan.goal && (
+                            <div className="plan-meta-row"><span className="meta-tag">🎯 Goal:</span><span className="meta-val">{message.plan.goal}</span></div>
+                          )}
+                          {message.plan.scope && (
+                            <div className="plan-meta-row"><span className="meta-tag">📐 Scope:</span><span className="meta-val">{message.plan.scope}</span></div>
+                          )}
+                          {Array.isArray(message.plan.tasks) && message.plan.tasks.length > 0 && (
+                            <div className="plan-tasks-block">
+                              <span className="tasks-block-header">Pembagian Tugas ({message.plan.tasks.length} task):</span>
+                              <div className="tasks-grid">
+                                {message.plan.tasks.map((task, tIdx) => (
+                                  <div key={tIdx} className="task-card">
+                                    <div className="task-card-top">
+                                      <span className="task-badge-id">{task.id}</span>
+                                      <span className="task-badge-title">{task.title}</span>
+                                      <span className={`task-badge-status status-${task.status}`}>{task.status}</span>
+                                    </div>
+                                    <div className="task-assignee-info">
+                                      <span className="assignee-avatar" aria-hidden="true">👤</span>
+                                      <strong>{task.assignee}</strong>
+                                      <span className="assignee-role-sep">•</span>
+                                      <span className="assignee-role">{task.role}</span>
+                                    </div>
+                                    {task.description && <div className="task-desc">{task.description}</div>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Next Steps */}
+                      {Array.isArray(message.next_steps) && message.next_steps.length > 0 && (
+                        <div className="orchestrator-next-steps">
+                          <div className="panel-heading">
+                            <span aria-hidden="true">➡️</span>
+                            <strong>Langkah Selanjutnya:</strong>
+                          </div>
+                          <ul className="next-steps-list">
+                            {message.next_steps.map((step, sIdx) => (
+                              <li key={sIdx}>{step}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Confirmation */}
+                      {message.confirmation_prompt && (
+                        <div className="leader-confirmation-panel">
+                          <div className="confirmation-header-line">
+                            <span aria-hidden="true">⚠️</span>
+                            <strong>Persetujuan:</strong>
+                          </div>
+                          <p className="confirmation-body-text">{message.confirmation_prompt}</p>
+                          <div className="confirmation-action-buttons">
+                            <button type="button" className="confirm-btn confirm-btn-agree"
+                              onClick={() => handleQuickAction('Setuju, lanjutkan eksekusi.')}>✅ Setuju</button>
+                            <button type="button" className="confirm-btn confirm-btn-revise"
+                              onClick={() => handleQuickAction('Saya ingin merevisi: ')}>✏️ Revisi</button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : isLeaderMessage ? (
                     <>
                       {/* Persona Header & Phase Badge */}
                       <div className="leader-card-header">
@@ -703,7 +1006,7 @@ export function ChatPanel() {
             <div className="chat-message chat-message-loading" role="status" aria-label="Loading response">
               <div className="chat-message-content">
                 <span className="chat-loading-spinner"></span>
-                <span>{mode === 'leader' ? 'Arif sedang mengoordinasikan tim...' : 'is thinking...'}</span>
+                <span>{mode === 'leader' ? 'Arif sedang mengoordinasikan tim...' : mode === 'orchestrator' ? '🤖 Agent sedang bekerja dan berdiskusi...' : 'is thinking...'}</span>
               </div>
             </div>
           )}
@@ -714,7 +1017,7 @@ export function ChatPanel() {
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="chat-form">
           <label htmlFor="chat-input" className="chat-label">
-            {mode === 'leader' ? 'Instruksi untuk Arif (Project Lead)' : 'Message OpenCode'}
+            {mode === 'leader' ? 'Instruksi untuk Arif (Project Lead)' : mode === 'orchestrator' ? 'Perintah untuk Tim (Multi-Agent)' : 'Message OpenCode'}
           </label>
           <div className="chat-input-wrapper">
             <textarea
@@ -727,6 +1030,8 @@ export function ChatPanel() {
               placeholder={
                 mode === 'leader'
                   ? 'Contoh: "Arif, tugaskan Sinta untuk membuat campaign login"...'
+                  : mode === 'orchestrator'
+                  ? 'Contoh: "Buatkan rencana peluncuran produk dengan budget dan desain"...'
                   : 'Ask OpenCode something...'
               }
               aria-describedby="chat-help"
