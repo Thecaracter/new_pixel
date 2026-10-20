@@ -72,32 +72,80 @@ export const CHARACTER_ANIMATION_PRESETS = {
 
   typing: ({ t, sitting, refs }) => {
     const { body, head, leftArm, rightArm, leftLeg, rightLeg } = refs;
-    const tapL = Math.sin(t * 6.0) * 0.025;
-    const tapR = Math.sin(t * 6.0 + Math.PI) * 0.025;
     const breath = 1 + Math.sin(t * 1.5) * 0.012;
+
+    // 24-second organic office behavior cycle:
+    // 0s..13s: Active typing on keyboard & looking at monitor
+    // 13s..17s: Sipping coffee / tea (right arm lifts cup to mouth)
+    // 17s..20s: Thinking / hand on chin examining work
+    // 20s..24s: Gentle stretch / glancing sideways towards teammate
+    const cycle = (t % 24);
 
     if (body) {
       body.scale.set(1, breath, 1);
-      // Subtle natural forward posture towards desk when sitting
       body.rotation.x = sitting ? 0.03 : 0;
-    }
-
-    if (head) {
-      // Focused gaze towards monitor/keyboard
-      head.rotation.x = 0.14 + Math.sin(t * 1.4) * 0.015;
-    }
-
-    // Both arms reach forward towards desk surface / keyboard
-    if (leftArm) {
-      leftArm.rotation.set(-1.12 + tapL, 0.12, 0.12);
-    }
-    if (rightArm) {
-      rightArm.rotation.set(-1.12 + tapR, -0.12, -0.12);
     }
 
     if (!sitting) {
       if (leftLeg) leftLeg.rotation.set(0, 0, 0);
       if (rightLeg) rightLeg.rotation.set(0, 0, 0);
+    }
+
+    if (cycle < 13) {
+      // 1. Active Typing Phase
+      const tapL = Math.sin(t * 7.0) * 0.03;
+      const tapR = Math.sin(t * 7.0 + Math.PI) * 0.03;
+
+      if (head) {
+        head.rotation.set(0.14 + Math.sin(t * 1.8) * 0.015, Math.sin(t * 0.8) * 0.04, 0);
+      }
+      if (leftArm) {
+        leftArm.rotation.set(-1.12 + tapL, 0.12, 0.12);
+      }
+      if (rightArm) {
+        rightArm.rotation.set(-1.12 + tapR, -0.12, -0.12);
+      }
+    } else if (cycle < 17) {
+      // 2. Sipping Coffee Phase
+      const drinkProgress = (cycle - 13) / 4; // 0 to 1
+      const armLift = Math.sin(drinkProgress * Math.PI); // Smooth up and down
+
+      if (head) {
+        // Tilted back slightly as sipping
+        head.rotation.set(0.08 - armLift * 0.14, 0.05, 0);
+      }
+      if (rightArm) {
+        // Lifts hand up towards mouth
+        rightArm.rotation.set(-1.12 - armLift * 0.75, -0.12 - armLift * 0.15, -0.12 + armLift * 0.2);
+      }
+      if (leftArm) {
+        // Left arm rests calmly on desk
+        leftArm.rotation.set(-0.9, 0.1, 0.08);
+      }
+    } else if (cycle < 20) {
+      // 3. Thinking / Reviewing Phase
+      if (head) {
+        head.rotation.set(0.18, -0.12, 0.08);
+      }
+      if (rightArm) {
+        // Right hand supporting chin / cheek
+        rightArm.rotation.set(-1.55, -0.22, 0.15);
+      }
+      if (leftArm) {
+        leftArm.rotation.set(-0.85, 0.08, 0.08);
+      }
+    } else {
+      // 4. Glancing Sideways / Stretching Phase
+      const glance = Math.sin((cycle - 20) * 0.8) * 0.35;
+      if (head) {
+        head.rotation.set(0.04, glance, 0);
+      }
+      if (leftArm) {
+        leftArm.rotation.set(-0.75, 0.08, 0.15);
+      }
+      if (rightArm) {
+        rightArm.rotation.set(-0.75, -0.08, -0.15);
+      }
     }
   },
 

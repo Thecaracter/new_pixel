@@ -5,24 +5,25 @@ import * as THREE from 'three';
 
 /**
  * Waypoints schedule for Mochi the office cat.
- * Mochi roams through all 4 office zones:
- * 1. Breakout Lounge (sleeping / loafing)
- * 2. Pantry Cafe (sitting & grooming paw)
- * 3. Workstation Wing (walking past desks)
- * 4. Glass Meeting Room (walks through glass doorway, sits & inspects whiteboard)
+ * Mochi roams through all 4 office zones with 100% obstacle-clear paths:
+ * 1. Breakout Lounge (sleeping / loafing on carpet)
+ * 2. Pantry Cafe (sitting & grooming paw near coffee counter)
+ * 3. Glass Meeting Room (walks to glass doorway, sits & inspects meeting room)
+ * 4. Workstation Wing (walks down the main corridor past developer desks)
  */
 const WAYPOINTS = [
-  { pos: [13.0, 0, 8.2], pauseAction: 'sleep', pauseDuration: 8 },
-  { pos: [11.2, 0, 7.5] },
-  { pos: [8.6, 0, 7.5] },
-  { pos: [4.8, 0, 8.4], pauseAction: 'clean', pauseDuration: 5 },
-  { pos: [4.8, 0, 3.8] },
-  { pos: [8.6, 0, 3.8] },
-  { pos: [10.4, 0, 4.4] }, // Enter glass meeting room doorway
-  { pos: [13.2, 0, 2.0], pauseAction: 'sit', pauseDuration: 6 }, // Inside meeting room beside whiteboard
-  { pos: [10.4, 0, 4.4] }, // Exit glass meeting room doorway
-  { pos: [8.6, 0, 5.8] },
-  { pos: [11.2, 0, 6.8] },
+  { pos: [10.6, 0, 8.4], pauseAction: 'sleep', pauseDuration: 9 }, // Lounge warm carpet
+  { pos: [8.8, 0, 8.0] }, // Corridor south near lounge
+  { pos: [6.8, 0, 8.0] }, // Entering pantry zone (safely past wood slat divider)
+  { pos: [4.6, 0, 8.4], pauseAction: 'clean', pauseDuration: 6 }, // Pantry floor near coffee counter
+  { pos: [6.8, 0, 8.0] }, // Exiting pantry
+  { pos: [8.8, 0, 7.4] }, // Main corridor junction
+  { pos: [8.8, 0, 4.4] }, // Main corridor in front of glass doorway
+  { pos: [10.4, 0, 4.4], pauseAction: 'sit', pauseDuration: 6 }, // At glass doorway threshold
+  { pos: [8.8, 0, 4.4] }, // Back out to hallway
+  { pos: [8.8, 0, 2.2], pauseAction: 'sit', pauseDuration: 4 }, // Hallway north near workstations
+  { pos: [8.8, 0, 6.0] }, // Hallway central
+  { pos: [10.6, 0, 8.4] }, // Return to lounge carpet
 ];
 
 const CAT_WALK_SPEED = 0.9; // units per second
