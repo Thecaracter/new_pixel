@@ -7,6 +7,22 @@ import fs from 'fs';
 import { orchestrate, clearSession } from './agents/orchestrator.js';
 import mcpServer from './mcp/server.js';
 import { getAllAgents } from './agents/definitions.js';
+import {
+  loadChatStore,
+  saveChatMessage,
+  saveChatMessageSafe,
+  updateChatMessage,
+  updateChatMessageSafe,
+  getChatHistory,
+  clearChatHistory,
+  clearChatHistorySafe,
+  setChatSessionId,
+  getKanbanTasks,
+  loadKanbanStore,
+  approvePlan,
+  approvePlanSafe,
+  STORAGE_LIMITS
+} from './storage.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const __rootdir = path.resolve(__dirname, '..');
@@ -38,14 +54,25 @@ try {
 app.use(express.json());
 app.use(express.static(path.join(__rootdir, 'dist')));
 
-// Store active session IDs and model across requests (isolated per mode)
-let currentChatSessionId = null;
-let currentLeaderSessionId = null;
+// Store active session IDs and model across requests (isolated per mode, restored from storage)
+const initialChatStore = loadChatStore();
+let currentChatSessionId = initialChatStore.chat?.sessionId || null;
+let currentLeaderSessionId = initialChatStore.leader?.sessionId || null;
+let currentOrchestratorSessionId = initialChatStore.orchestrator?.sessionId || null;
 let currentModel = null;
 
-export function resetSessions() {
-  currentChatSessionId = null;
-  currentLeaderSessionId = null;
+export function resetSessions(mode = null) {
+  if (mode === 'leader') {
+    currentLeaderSessionId = null;
+  } else if (mode === 'chat') {
+    currentChatSessionId = null;
+  } else if (mode === 'orchestrator') {
+    currentOrchestratorSessionId = null;
+  } else {
+    currentChatSessionId = null;
+    currentLeaderSessionId = null;
+    currentOrchestratorSessionId = null;
+  }
 }
 
 const TEAM_FILE = path.join(__rootdir, 'data', 'team.json');
@@ -254,6 +281,7 @@ export function normalizeLeaderResponse(parsed, rawReply) {
     });
 
     plan = {
+      id: parsed.plan.id || `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       title: parsed.plan.title || 'Rencana Proyek',
       goal: parsed.plan.goal || '',
       scope: parsed.plan.scope || '',
@@ -425,6 +453,10 @@ app.post('/api/chat', async (req, res) => {
     nextSessionId = null;
     currentChatSessionId = null;
     currentLeaderSessionId = null;
+    currentOrchestratorSessionId = null;
+    setChatSessionId('chat', null);
+    setChatSessionId('leader', null);
+    setChatSessionId('orchestrator', null);
     currentModel = selectedModel;
   } else {
     // Isolate sessions by mode and honor explicit null for fresh session
@@ -436,6 +468,13 @@ app.post('/api/chat', async (req, res) => {
       nextSessionId = isLeaderMode ? currentLeaderSessionId : currentChatSessionId;
     }
   }
+
+  // Persist incoming user message to durable chat storage
+  await saveChatMessageSafe(effectiveMode, {
+    type: 'user',
+    mode: effectiveMode,
+    text: trimmedMessage
+  }, nextSessionId || undefined);
 
   try {
     // Build opencode command with JSON format for structured output
@@ -472,8 +511,10 @@ app.post('/api/chat', async (req, res) => {
       nextSessionId = result.sessionId;
       if (isLeaderMode) {
         currentLeaderSessionId = result.sessionId;
+        setChatSessionId('leader', result.sessionId);
       } else {
         currentChatSessionId = result.sessionId;
+        setChatSessionId('chat', result.sessionId);
       }
     }
     
@@ -485,6 +526,15 @@ app.post('/api/chat', async (req, res) => {
 
     if (!isLeaderMode) {
       // Standard chat response - 100% backward-compatible with legacy clients
+      await saveChatMessageSafe('chat', {
+        type: 'assistant',
+        mode: 'chat',
+        text: rawOutput,
+        reply: rawOutput,
+        phase: 'chat',
+        model: selectedModel || currentModel || null
+      }, nextSessionId || null);
+
       return res.json({
         reply: rawOutput,
         sessionId: nextSessionId || null,
@@ -497,6 +547,23 @@ app.post('/api/chat', async (req, res) => {
     // Leader Mode: parse structured response with graceful fallback
     const parsedStructured = extractStructuredJson(rawOutput);
     const normalized = normalizeLeaderResponse(parsedStructured, rawOutput);
+
+    if (normalized.plan && !normalized.plan.id) {
+      normalized.plan.id = `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    }
+
+    await saveChatMessageSafe('leader', {
+      type: 'assistant',
+      mode: 'leader',
+      text: normalized.summary,
+      reply: normalized.summary,
+      phase: normalized.phase,
+      questions: normalized.questions,
+      plan: normalized.plan,
+      confirmation_prompt: normalized.confirmation_prompt,
+      valid: normalized.valid,
+      model: selectedModel || currentModel || null
+    }, nextSessionId || null);
 
     const leaderResponse = {
       reply: normalized.summary,
@@ -630,9 +697,42 @@ app.post('/api/orchestrate', async (req, res) => {
 
   const selectedModel = model || currentModel;
 
+  // Persist user message to orchestrator history
+  await saveChatMessageSafe('orchestrator', {
+    type: 'user',
+    mode: 'orchestrator',
+    text: message.trim()
+  }, sessionId || currentOrchestratorSessionId);
+
   try {
     console.log('\n🚀 Orchestration started...');
     const result = await orchestrate(OPENCODE_BIN, selectedModel, message.trim(), sessionId);
+
+    if (result.sessionId) {
+      currentOrchestratorSessionId = result.sessionId;
+      setChatSessionId('orchestrator', result.sessionId);
+    }
+
+    if (result.plan && !result.plan.id) {
+      result.plan.id = `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    }
+
+    // Persist assistant response to orchestrator history
+    await saveChatMessageSafe('orchestrator', {
+      type: 'assistant',
+      mode: 'orchestrator',
+      text: result.summary,
+      reply: result.summary,
+      phase: result.phase,
+      questions: result.questions || [],
+      plan: result.plan || null,
+      confirmation_prompt: result.confirmation_prompt || null,
+      delegations: result.delegations || [],
+      agentResults: result.agentResults || [],
+      discussions: result.discussions || [],
+      next_steps: result.next_steps || [],
+      model: selectedModel || null
+    }, result.sessionId || sessionId || currentOrchestratorSessionId);
 
     return res.json({
       ...result,
@@ -648,6 +748,179 @@ app.post('/api/orchestrate', async (req, res) => {
       details: error.message
     });
   }
+});
+
+/**
+ * GET /api/chat/history
+ * Query: ?mode=leader|chat|orchestrator
+ * Returns durable chat messages and session IDs isolated per mode
+ */
+app.get('/api/chat/history', (req, res) => {
+  const { mode } = req.query;
+  if (mode) {
+    if (!['leader', 'chat', 'orchestrator'].includes(mode)) {
+      return res.status(400).json({
+        error: 'Invalid mode',
+        details: 'mode must be one of: leader, chat, orchestrator'
+      });
+    }
+    const history = getChatHistory(mode);
+    return res.json(history);
+  }
+  const allHistory = getChatHistory();
+  return res.json({ history: allHistory });
+});
+
+/**
+ * POST /api/chat/reset
+ * Body or Query: { mode?: 'leader' | 'chat' | 'orchestrator' | 'all' }
+ * Resets durable session and history for a given mode or all modes
+ */
+app.post('/api/chat/reset', async (req, res) => {
+  const mode = req.body?.mode || req.query?.mode || 'all';
+  if (mode !== 'all' && !['leader', 'chat', 'orchestrator'].includes(mode)) {
+    return res.status(400).json({
+      error: 'Invalid mode',
+      details: 'mode must be one of: leader, chat, orchestrator, all'
+    });
+  }
+
+  const targetMode = mode === 'all' ? null : mode;
+  await clearChatHistorySafe(targetMode);
+  resetSessions(targetMode);
+
+  res.json({ success: true, mode });
+});
+
+/**
+ * DELETE /api/chat/history
+ * Alias for resetting chat history
+ */
+app.delete('/api/chat/history', async (req, res) => {
+  const mode = req.query?.mode || 'all';
+  if (mode !== 'all' && !['leader', 'chat', 'orchestrator'].includes(mode)) {
+    return res.status(400).json({
+      error: 'Invalid mode',
+      details: 'mode must be one of: leader, chat, orchestrator, all'
+    });
+  }
+
+  const targetMode = mode === 'all' ? null : mode;
+  await clearChatHistorySafe(targetMode);
+  resetSessions(targetMode);
+
+  res.json({ success: true, mode });
+});
+
+/**
+ * Handler for plan approval into Kanban
+ */
+async function handleApprovePlan(req, res) {
+  const { plan, planId, idempotencyKey, messageId, mode } = req.body || {};
+
+  if (!plan || typeof plan !== 'object') {
+    return res.status(400).json({
+      error: 'Invalid request',
+      details: 'plan must be a valid object'
+    });
+  }
+
+  if (typeof plan.title !== 'string' || !plan.title.trim()) {
+    return res.status(400).json({
+      error: 'Invalid request',
+      details: 'plan.title is required and cannot be empty'
+    });
+  }
+
+  if (plan.title.trim().length > STORAGE_LIMITS.MAX_PLAN_TITLE_LENGTH) {
+    return res.status(400).json({
+      error: 'Invalid request',
+      details: `plan.title exceeds maximum length of ${STORAGE_LIMITS.MAX_PLAN_TITLE_LENGTH} characters`
+    });
+  }
+
+  if (!Array.isArray(plan.tasks) || plan.tasks.length === 0) {
+    return res.status(400).json({
+      error: 'Invalid request',
+      details: 'plan.tasks must be a non-empty array'
+    });
+  }
+
+  if (plan.tasks.length > STORAGE_LIMITS.MAX_TASKS_PER_PLAN) {
+    return res.status(400).json({
+      error: 'Invalid request',
+      details: `plan.tasks exceeds maximum allowed tasks (${STORAGE_LIMITS.MAX_TASKS_PER_PLAN})`
+    });
+  }
+
+  for (let i = 0; i < plan.tasks.length; i++) {
+    const t = plan.tasks[i];
+    if (!t || typeof t !== 'object' || !t.title || typeof t.title !== 'string' || !t.title.trim()) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        details: `Task at index ${i} is missing a valid title`
+      });
+    }
+    if (t.title.trim().length > STORAGE_LIMITS.MAX_TASK_TITLE_LENGTH) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        details: `Task at index ${i} title exceeds maximum length of ${STORAGE_LIMITS.MAX_TASK_TITLE_LENGTH} characters`
+      });
+    }
+    if (t.description && typeof t.description === 'string' && t.description.length > STORAGE_LIMITS.MAX_TASK_DESCRIPTION_LENGTH) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        details: `Task at index ${i} description exceeds maximum length of ${STORAGE_LIMITS.MAX_TASK_DESCRIPTION_LENGTH} characters`
+      });
+    }
+  }
+
+  try {
+    const result = await approvePlanSafe({
+      plan,
+      planId,
+      idempotencyKey,
+      teamMembers: TEAM_MEMBERS
+    });
+
+    if (messageId) {
+      const targetMode = mode && ['leader', 'orchestrator'].includes(mode) ? mode : 'leader';
+      await updateChatMessageSafe(targetMode, messageId, {
+        approval: {
+          status: 'approved',
+          alreadyApproved: result.alreadyApproved,
+          approvedAt: new Date().toISOString(),
+          planId: result.planId,
+          count: result.count,
+          taskIds: result.tasks.map(t => t.id)
+        }
+      });
+    }
+
+    return res.status(result.alreadyApproved ? 200 : 201).json(result);
+  } catch (err) {
+    console.error('Plan approval error:', err);
+    return res.status(500).json({
+      error: 'Plan approval failed',
+      details: err.message
+    });
+  }
+}
+
+app.post('/api/chat/approve-plan', handleApprovePlan);
+app.post('/api/kanban/approve-plan', handleApprovePlan);
+
+/**
+ * GET /api/kanban/tasks
+ * Returns Kanban tasks, columns, and approved plans
+ */
+app.get('/api/kanban/tasks', (req, res) => {
+  const store = loadKanbanStore();
+  res.json({
+    tasks: store.tasks,
+    columns: store.columns,
+    approvedPlans: store.approvedPlans
+  });
 });
 
 /**
@@ -848,4 +1121,16 @@ if (isMainModule) {
   });
 }
 
-export { app, server };
+export {
+  app,
+  server,
+  loadChatStore,
+  saveChatMessage,
+  updateChatMessage,
+  getChatHistory,
+  clearChatHistory,
+  setChatSessionId,
+  getKanbanTasks,
+  loadKanbanStore,
+  approvePlan
+};

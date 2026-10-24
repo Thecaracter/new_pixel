@@ -49,12 +49,14 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
   const [questionStep, setQuestionStep] = useState({});
   // Answers map: { "msgIdx-qIdx": "answer text" }
   const [questionAnswers, setQuestionAnswers] = useState({});
+  // Approval status map for leader/orchestrator plans: { [msgKey]: { status, message, tasks, count, alreadyApproved } }
+  const [approvalStatuses, setApprovalStatuses] = useState({});
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const stepperInputRef = useRef(null);
 
-  // Fetch available models and team roster on mount
+  // Fetch available models, team roster, and durable chat history on mount
   useEffect(() => {
     const fetchModels = async () => {
       try {
@@ -105,8 +107,43 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
       }
     };
 
+    const fetchChatHistory = async () => {
+      try {
+        const response = await fetch('/api/chat/history');
+        if (response.ok) {
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await response.json();
+            if (data.history) {
+              if (Array.isArray(data.history.leader?.messages)) {
+                setLeaderMessages(data.history.leader.messages);
+              }
+              if (data.history.leader?.sessionId) {
+                setLeaderSessionId(data.history.leader.sessionId);
+              }
+              if (Array.isArray(data.history.chat?.messages)) {
+                setChatMessages(data.history.chat.messages);
+              }
+              if (data.history.chat?.sessionId) {
+                setChatSessionId(data.history.chat.sessionId);
+              }
+              if (Array.isArray(data.history.orchestrator?.messages)) {
+                setOrchestratorMessages(data.history.orchestrator.messages);
+              }
+              if (data.history.orchestrator?.sessionId) {
+                setOrchestratorSessionId(data.history.orchestrator.sessionId);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load durable chat history:', err);
+      }
+    };
+
     fetchModels();
     fetchTeam();
+    fetchChatHistory();
   }, []);
 
   // Active messages based on mode
@@ -166,8 +203,18 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
     handleSubmit(null, fullMessage);
   };
 
-  const handleResetSession = () => {
+  const handleResetSession = async () => {
     if (loading) return;
+    try {
+      await fetch('/api/chat/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      });
+    } catch (err) {
+      console.warn('Failed to reset backend chat history:', err);
+    }
+
     if (mode === 'leader') {
       setLeaderSessionId(null);
       setLeaderMessages([]);
@@ -179,6 +226,82 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
       setChatMessages([]);
     }
     setError(null);
+  };
+
+  const handleApprovePlan = async (message, plan) => {
+    if (!plan || loading) return;
+    const planId = plan.id || `plan_${Date.now()}`;
+    const msgKey = message.id || planId;
+
+    setApprovalStatuses(prev => ({
+      ...prev,
+      [msgKey]: { status: 'loading', message: 'Mengirim persetujuan ke Kanban...' }
+    }));
+
+    try {
+      const response = await fetch('/api/chat/approve-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan,
+          planId,
+          idempotencyKey: planId,
+          messageId: message.id,
+          mode
+        })
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      let data = {};
+      if (contentType.includes('application/json')) {
+        data = await response.json().catch(() => ({}));
+      } else {
+        const text = await response.text().catch(() => '');
+        throw new Error(text || `HTTP ${response.status}`);
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.details || data.error || 'Gagal menyetujui rencana');
+      }
+
+      const approvalRecord = {
+        status: 'approved',
+        alreadyApproved: data.alreadyApproved,
+        approvedAt: new Date().toISOString(),
+        planId: data.planId,
+        count: data.count,
+        tasks: data.tasks || []
+      };
+
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [msgKey]: {
+          status: 'success',
+          alreadyApproved: data.alreadyApproved,
+          message: data.alreadyApproved
+            ? 'Rencana ini sudah pernah disetujui sebelumnya. Task telah aktif di antrean Kanban (Backlog/Pending).'
+            : `Persetujuan berhasil! ${data.count} task telah dimasukkan ke Kanban (Backlog/Pending).`,
+          tasks: data.tasks || [],
+          count: data.count
+        }
+      }));
+
+      // Update message in state
+      if (mode === 'leader') {
+        setLeaderMessages(prev => prev.map(m => (m.id === message.id || m === message) ? { ...m, approval: approvalRecord } : m));
+      } else if (mode === 'orchestrator') {
+        setOrchestratorMessages(prev => prev.map(m => (m.id === message.id || m === message) ? { ...m, approval: approvalRecord } : m));
+      }
+    } catch (err) {
+      console.error('Plan approval error:', err);
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [msgKey]: {
+          status: 'error',
+          message: err.message || 'Gagal menghubungi server untuk persetujuan Kanban'
+        }
+      }));
+    }
   };
 
   const handleSubmit = async (e, directMessage) => {
@@ -775,21 +898,83 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                       )}
 
                       {/* Confirmation */}
-                      {message.confirmation_prompt && (
-                        <div className="leader-confirmation-panel">
-                          <div className="confirmation-header-line">
-                            <span aria-hidden="true">⚠️</span>
-                            <strong>Persetujuan:</strong>
+                      {message.confirmation_prompt && (() => {
+                        const msgKey = message.id || message.plan?.id || `orch_plan_${index}`;
+                        const approvalState = approvalStatuses[msgKey] || (message.approval ? {
+                          status: 'success',
+                          alreadyApproved: message.approval.alreadyApproved,
+                          message: `Rencana telah disetujui. ${message.approval.count || message.approval.tasks?.length || message.plan?.tasks?.length || 0} task aktif di antrean Kanban (Backlog/Pending).`,
+                          tasks: message.approval.tasks || [],
+                          count: message.approval.count || message.plan?.tasks?.length || 0
+                        } : null);
+
+                        const isApproved = approvalState?.status === 'success' || message.approval?.status === 'approved';
+
+                        return (
+                          <div className="leader-confirmation-panel">
+                            <div className="confirmation-header-line">
+                              <span aria-hidden="true">⚠️</span>
+                              <strong>Persetujuan:</strong>
+                            </div>
+                            <p className="confirmation-body-text">{message.confirmation_prompt}</p>
+
+                            {approvalState?.status === 'loading' && (
+                              <div className="approval-status-banner loading" role="status">
+                                <span className="chat-loading-spinner"></span>
+                                <span>Menyimpan ke antrean Kanban...</span>
+                              </div>
+                            )}
+
+                            {approvalState?.status === 'success' && (
+                              <div className="approval-status-banner success" role="status">
+                                <span aria-hidden="true">✅</span>
+                                <div className="approval-banner-content">
+                                  <strong>{approvalState.alreadyApproved ? 'ℹ️ Sudah Disetujui' : '✅ Berhasil Didaftarkan ke Kanban'}</strong>
+                                  <p className="approval-subtext">{approvalState.message}</p>
+                                  {Array.isArray(approvalState.tasks) && approvalState.tasks.length > 0 && (
+                                    <div className="approval-tasks-chips">
+                                      {approvalState.tasks.map(t => (
+                                        <span key={t.id} className="approval-task-chip">
+                                          <strong>{t.id}</strong>: {t.title} ({t.assignee} • <span className="chip-status">Backlog</span>)
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {approvalState?.status === 'error' && (
+                              <div className="approval-status-banner error" role="alert">
+                                <span aria-hidden="true">❌</span>
+                                <div className="approval-banner-content">
+                                  <strong>Gagal Membuat Task Kanban</strong>
+                                  <p className="approval-subtext">{approvalState.message}</p>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="confirmation-action-buttons">
+                              {isApproved ? (
+                                <button type="button" className="confirm-btn confirm-btn-approved" disabled>
+                                  ✅ Rencana Disetujui ({approvalState?.count || message.approval?.count || message.plan?.tasks?.length || 0} Task di Kanban)
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="confirm-btn confirm-btn-agree"
+                                  onClick={() => message.plan ? handleApprovePlan(message, message.plan) : handleQuickAction('Setuju, lanjutkan eksekusi.')}
+                                  disabled={loading || approvalState?.status === 'loading'}
+                                >
+                                  {approvalState?.status === 'loading' ? '⏳ Menyimpan...' : '✅ Setuju & Buat Task Kanban'}
+                                </button>
+                              )}
+                              <button type="button" className="confirm-btn confirm-btn-revise"
+                                onClick={() => handleQuickAction('Saya ingin merevisi: ')} disabled={loading}>✏️ Revisi</button>
+                            </div>
                           </div>
-                          <p className="confirmation-body-text">{message.confirmation_prompt}</p>
-                          <div className="confirmation-action-buttons">
-                            <button type="button" className="confirm-btn confirm-btn-agree"
-                              onClick={() => handleQuickAction('Setuju, lanjutkan eksekusi.')}>✅ Setuju</button>
-                            <button type="button" className="confirm-btn confirm-btn-revise"
-                              onClick={() => handleQuickAction('Saya ingin merevisi: ')}>✏️ Revisi</button>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </>
                   ) : isLeaderMessage ? (
                     <>
@@ -968,31 +1153,93 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                       )}
 
                       {/* Confirmation Prompt Section */}
-                      {message.confirmation_prompt && (
-                        <div className="leader-confirmation-panel">
-                          <div className="confirmation-header-line">
-                            <span aria-hidden="true">⚠️</span>
-                            <strong>Persetujuan Sebelum Eksekusi:</strong>
+                      {message.confirmation_prompt && (() => {
+                        const msgKey = message.id || message.plan?.id || `leader_plan_${index}`;
+                        const approvalState = approvalStatuses[msgKey] || (message.approval ? {
+                          status: 'success',
+                          alreadyApproved: message.approval.alreadyApproved,
+                          message: `Rencana telah disetujui. ${message.approval.count || message.approval.tasks?.length || message.plan?.tasks?.length || 0} task aktif di antrean Kanban (Backlog/Pending).`,
+                          tasks: message.approval.tasks || [],
+                          count: message.approval.count || message.plan?.tasks?.length || 0
+                        } : null);
+
+                        const isApproved = approvalState?.status === 'success' || message.approval?.status === 'approved';
+
+                        return (
+                          <div className="leader-confirmation-panel">
+                            <div className="confirmation-header-line">
+                              <span aria-hidden="true">⚠️</span>
+                              <strong>Persetujuan Sebelum Eksekusi:</strong>
+                            </div>
+                            <p className="confirmation-body-text">{message.confirmation_prompt}</p>
+
+                            {approvalState?.status === 'loading' && (
+                              <div className="approval-status-banner loading" role="status">
+                                <span className="chat-loading-spinner"></span>
+                                <span>Menyimpan ke antrean Kanban...</span>
+                              </div>
+                            )}
+
+                            {approvalState?.status === 'success' && (
+                              <div className="approval-status-banner success" role="status">
+                                <span aria-hidden="true">✅</span>
+                                <div className="approval-banner-content">
+                                  <strong>{approvalState.alreadyApproved ? 'ℹ️ Sudah Disetujui' : '✅ Berhasil Didaftarkan ke Kanban'}</strong>
+                                  <p className="approval-subtext">{approvalState.message}</p>
+                                  {Array.isArray(approvalState.tasks) && approvalState.tasks.length > 0 && (
+                                    <div className="approval-tasks-chips">
+                                      {approvalState.tasks.map(t => (
+                                        <span key={t.id} className="approval-task-chip">
+                                          <strong>{t.id}</strong>: {t.title} ({t.assignee} • <span className="chip-status">Backlog</span>)
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {approvalState?.status === 'error' && (
+                              <div className="approval-status-banner error" role="alert">
+                                <span aria-hidden="true">❌</span>
+                                <div className="approval-banner-content">
+                                  <strong>Gagal Membuat Task Kanban</strong>
+                                  <p className="approval-subtext">{approvalState.message}</p>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="confirmation-action-buttons">
+                              {isApproved ? (
+                                <button
+                                  type="button"
+                                  className="confirm-btn confirm-btn-approved"
+                                  disabled
+                                >
+                                  ✅ Rencana Disetujui ({approvalState?.count || message.approval?.count || message.plan?.tasks?.length || 0} Task di Kanban)
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="confirm-btn confirm-btn-agree"
+                                  onClick={() => message.plan ? handleApprovePlan(message, message.plan) : handleQuickAction('Setuju, rencana sudah sesuai. Silakan lanjutkan.')}
+                                  disabled={loading || approvalState?.status === 'loading'}
+                                >
+                                  {approvalState?.status === 'loading' ? '⏳ Menyimpan...' : '✅ Setuju & Buat Task Kanban'}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="confirm-btn confirm-btn-revise"
+                                onClick={() => handleQuickAction('Saya ingin merevisi rencana ini: ')}
+                                disabled={loading}
+                              >
+                                ✏️ Beri Catatan Revisi
+                              </button>
+                            </div>
                           </div>
-                          <p className="confirmation-body-text">{message.confirmation_prompt}</p>
-                          <div className="confirmation-action-buttons">
-                            <button
-                              type="button"
-                              className="confirm-btn confirm-btn-agree"
-                              onClick={() => handleQuickAction('Setuju, rencana sudah sesuai. Silakan lanjutkan.')}
-                            >
-                              ✅ Setuju & Lanjutkan
-                            </button>
-                            <button
-                              type="button"
-                              className="confirm-btn confirm-btn-revise"
-                              onClick={() => handleQuickAction('Saya ingin merevisi rencana ini: ')}
-                            >
-                              ✏️ Beri Catatan Revisi
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </>
                   ) : (
                     <div>{message.text}</div>

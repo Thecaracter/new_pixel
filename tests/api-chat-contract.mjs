@@ -1,13 +1,19 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { app } from '../server/index.js';
+import { setStoragePaths, resetStoragePaths } from '../server/storage.js';
 
 describe('HTTP /api/chat Contract Integration Tests', () => {
   let testServer;
   let serverPort;
+  const testChatFile = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.tmp_test_api_chat.json');
 
   before(async () => {
+    setStoragePaths({ chatFile: testChatFile });
     await new Promise((resolve) => {
       testServer = app.listen(0, '127.0.0.1', () => {
         serverPort = testServer.address().port;
@@ -20,6 +26,12 @@ describe('HTTP /api/chat Contract Integration Tests', () => {
     if (testServer) {
       await new Promise(resolve => testServer.close(resolve));
     }
+    resetStoragePaths();
+    try {
+      if (fs.existsSync(testChatFile)) {
+        fs.unlinkSync(testChatFile);
+      }
+    } catch (_) {}
   });
 
   function postChat(body) {

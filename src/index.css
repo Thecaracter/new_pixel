@@ -1682,6 +1682,79 @@ header p {
   background: rgba(107, 101, 145, 0.1);
 }
 
+.confirm-btn-approved {
+  background: #10b981;
+  color: #fff;
+  cursor: default;
+  opacity: 0.95;
+}
+
+.approval-status-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.approval-status-banner.loading {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.approval-status-banner.success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.approval-status-banner.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.approval-banner-content {
+  flex: 1;
+}
+
+.approval-subtext {
+  margin: 4px 0 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.approval-tasks-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.approval-task-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(22, 101, 52, 0.08);
+  border: 1px solid rgba(22, 101, 52, 0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.approval-task-chip .chip-status {
+  color: #d97706;
+  font-weight: 600;
+  background: #fef3c7;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+
 @media (max-width: 640px) {
   .chat-container {
     max-height: 400px;

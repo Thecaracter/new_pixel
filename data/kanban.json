@@ -1,0 +1,21 @@
+{
+  "columns": [
+    {
+      "id": "backlog",
+      "name": "Backlog",
+      "position": 1
+    },
+    {
+      "id": "in_progress",
+      "name": "In Progress",
+      "position": 2
+    },
+    {
+      "id": "done",
+      "name": "Done",
+      "position": 3
+    }
+  ],
+  "approvedPlans": {},
+  "tasks": []
+}

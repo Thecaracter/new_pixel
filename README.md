@@ -262,9 +262,138 @@ Response (error):
 - If `model` is omitted, the currently selected model is used
 - The response always includes tracking fields
 
-### Session Continuity
+**GET /api/chat/history**
 
-The integration supports persistent sessions across multiple messages:
+Fetches durable conversation history and session IDs isolated per mode.
+
+Query parameters:
+- `mode` (optional): `leader`, `chat`, or `orchestrator`. If omitted, returns all modes.
+
+Response:
+```json
+{
+  "mode": "leader",
+  "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4",
+  "messages": [
+    {
+      "id": "msg_1729760000_abc123",
+      "timestamp": 1729760000000,
+      "type": "user",
+      "mode": "leader",
+      "text": "Kita mau buat fitur export PDF laporan bulanan."
+    }
+  ]
+}
+```
+
+**POST /api/chat/reset** (or `DELETE /api/chat/history`)
+
+Resets durable messages and session IDs for a specific mode or all modes.
+
+Body / Query:
+```json
+{
+  "mode": "leader"
+}
+```
+
+**POST /api/chat/approve-plan** (alias: `/api/kanban/approve-plan`)
+
+Explicit approval endpoint to create tasks in Kanban from a leader/orchestrator plan.
+
+Request:
+```json
+{
+  "planId": "plan_login_v1",
+  "idempotencyKey": "plan_login_v1",
+  "messageId": "msg_1729760000_abc123",
+  "plan": {
+    "id": "plan_login_v1",
+    "title": "Fitur Login & Autentikasi",
+    "goal": "User dapat login dengan aman",
+    "scope": "Frontend & backend auth",
+    "tasks": [
+      {
+        "id": "TASK-1",
+        "title": "Desain Form Login",
+        "assignee": "Dimas",
+        "role": "UI/UX Designer",
+        "description": "Mockup form login",
+        "status": "pending"
+      }
+    ]
+  }
+}
+```
+
+Response (Created - 201):
+```json
+{
+  "success": true,
+  "alreadyApproved": false,
+  "planId": "plan_login_v1",
+  "idempotencyKey": "plan_login_v1",
+  "message": "Plan approved: 1 tasks created in Kanban backlog.",
+  "tasks": [
+    {
+      "id": "TASK-1",
+      "planId": "plan_login_v1",
+      "planTitle": "Fitur Login & Autentikasi",
+      "title": "Desain Form Login",
+      "description": "Mockup form login",
+      "assignee": "Dimas",
+      "role": "UI/UX Designer",
+      "status": "pending",
+      "column": "backlog",
+      "createdAt": "2026-10-24T00:00:00.000Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+Response on Retry (Idempotent - 200):
+```json
+{
+  "success": true,
+  "alreadyApproved": true,
+  "planId": "plan_login_v1",
+  "idempotencyKey": "plan_login_v1",
+  "message": "Plan has already been approved. Existing tasks preserved.",
+  "tasks": [...],
+  "count": 1
+}
+```
+
+**GET /api/kanban/tasks**
+
+Returns current Kanban tasks, columns (`Backlog`, `In Progress`, `Done`), and approved plan records.
+
+Response:
+```json
+{
+  "tasks": [...],
+  "columns": [
+    { "id": "backlog", "name": "Backlog", "position": 1 },
+    { "id": "in_progress", "name": "In Progress", "position": 2 },
+    { "id": "done", "name": "Done", "position": 3 }
+  ],
+  "approvedPlans": {...}
+}
+```
+
+### Session Continuity and Durable Storage
+
+The integration supports persistent sessions across multiple messages and browser reloads:
+- **Durable File Store**: Chat histories and active sessions are stored in `data/chat_history.json`, surviving browser reloads and backend restarts.
+- **Kanban Task Store**: Approved plans are durably stored in `data/kanban.json`.
+- **Mode Isolation**: Leader mode, Standard Chat, and Multi-Agent Orchestrator maintain strictly separated session IDs and message threads.
+- **Concurrency & Mutex**: All mutations are serialized with an in-process `AsyncMutex` (`chatMutex`, `kanbanMutex`) to eliminate race conditions and lost updates during concurrent requests.
+- **Atomic File Writes**: Safe writes utilize temporary files with atomic rename and retry loop on Windows to eliminate partial JSON writes. Fallback to direct write was removed to preserve atomicity guarantees.
+- **DoS Protection & Validation**: Limits are enforced on plans and tasks (`MAX_PLAN_TITLE_LENGTH = 200`, `MAX_TASKS_PER_PLAN = 50`, `MAX_TASK_TITLE_LENGTH = 200`, `MAX_TASK_DESCRIPTION_LENGTH = 2000`).
+- **Collision-Proof Task IDs**: Unique non-colliding task identifiers are generated even if distinct plans submit identical task keys.
+- **Idempotency**: Repeated approval requests using the same plan/key do not create duplicate Kanban tasks.
+- **Gating**: Unapproved plans remain in pending status and never create Kanban tasks without explicit user approval.
 - **First message**: Creates a new OpenCode session (no `--session` flag needed)
 - **Subsequent messages**: Include the session ID via `--session <sessionId>` flag
 - **Session ID parsing**: Extracted from the first JSON event in OpenCode's output (`event.sessionID`)
@@ -385,6 +514,17 @@ curl -X POST http://127.0.0.1:3001/api/chat \
 curl -X POST http://127.0.0.1:3001/api/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "Tolong pimpin pembuatan fitur autentikasi OAuth", "mode": "leader"}'
+
+# Read durable chat history
+curl -X GET "http://127.0.0.1:3001/api/chat/history?mode=leader"
+
+# Approve leader plan and create Kanban backlog tasks
+curl -X POST http://127.0.0.1:3001/api/chat/approve-plan \
+  -H "Content-Type: application/json" \
+  -d '{"planId": "plan-1", "plan": {"title": "Fitur Login", "tasks": [{"title": "Desain UI", "assignee": "Dimas", "role": "UI/UX Designer"}]}}'
+
+# View Kanban tasks
+curl -X GET http://127.0.0.1:3001/api/kanban/tasks
 ```
 
 ## Preservation Notes

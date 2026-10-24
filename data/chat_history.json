@@ -1,0 +1,14 @@
+{
+  "leader": {
+    "sessionId": null,
+    "messages": []
+  },
+  "chat": {
+    "sessionId": null,
+    "messages": []
+  },
+  "orchestrator": {
+    "sessionId": null,
+    "messages": []
+  }
+}
