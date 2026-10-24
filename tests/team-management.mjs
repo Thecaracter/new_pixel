@@ -1,14 +1,25 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { app, TEAM_MEMBERS, buildLeaderSystemPrompt } from '../server/index.js';
 import { getAgent, getAllAgents, getWorkerAgents } from '../server/agents/definitions.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const teamJsonPath = path.join(__dirname, '..', 'data', 'team.json');
 
 describe('Team & Agent Management Contract Tests', () => {
   let testServer;
   let serverPort;
+  let originalTeamJson = '';
 
   before(async () => {
+    try {
+      originalTeamJson = fs.readFileSync(teamJsonPath, 'utf8');
+    } catch (_) {}
+
     await new Promise((resolve) => {
       testServer = app.listen(0, '127.0.0.1', () => {
         serverPort = testServer.address().port;
@@ -20,6 +31,11 @@ describe('Team & Agent Management Contract Tests', () => {
   after(async () => {
     if (testServer) {
       await new Promise(resolve => testServer.close(resolve));
+    }
+    if (originalTeamJson) {
+      try {
+        fs.writeFileSync(teamJsonPath, originalTeamJson);
+      } catch (_) {}
     }
   });
 

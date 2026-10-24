@@ -16,6 +16,55 @@
       "position": 3
     }
   ],
-  "approvedPlans": {},
-  "tasks": []
+  "approvedPlans": {
+    "plan_google_one_jio_v1": {
+      "approvedAt": "2026-10-24T11:30:00.000Z",
+      "planId": "plan_google_one_jio_v1",
+      "planTitle": "Riset Pendaftaran Google One (Promo Jio & Alternatif Tanpa No Jio)",
+      "taskIds": [
+        "TASK-1",
+        "TASK-2"
+      ],
+      "count": 2
+    }
+  },
+  "projects": [
+    {
+      "id": "plan_google_one_jio_v1",
+      "name": "Riset Pendaftaran Google One (Promo Jio & Alternatif)",
+      "goal": "Menemukan opsi pendaftaran Google One premium yang paling relevan, termasuk info promo kerja sama Jio dan alternatif yang tetap bisa dipakai tanpa nomor Jio.",
+      "scope": "Riset informasi/link resmi Google dan Jio; rekomendasi alternatif berlangganan; tanpa pembelian atau pendaftaran atas nama user.",
+      "description": "Riset inisiatif pendaftaran Google One bersama Sinta.",
+      "createdAt": "2026-10-24T11:30:00.000Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-1",
+      "projectId": "plan_google_one_jio_v1",
+      "planId": "plan_google_one_jio_v1",
+      "planTitle": "Riset Pendaftaran Google One (Promo Jio & Alternatif Tanpa No Jio)",
+      "title": "Riset promo Google One x Jio",
+      "description": "Cari informasi resmi mengenai paket/bundling Google One dengan Jio, syarat pendaftaran (termasuk apakah wajib nomor Jio), dan halaman resmi terkait jika ada.",
+      "assignee": "Sinta",
+      "role": "Marketing / Growth",
+      "status": "pending",
+      "column": "backlog",
+      "createdAt": "2026-10-24T11:30:00.000Z",
+      "updatedAt": "2026-10-24T11:55:58.880Z"
+    },
+    {
+      "id": "TASK-2",
+      "projectId": "plan_google_one_jio_v1",
+      "planId": "plan_google_one_jio_v1",
+      "planTitle": "Riset Pendaftaran Google One (Promo Jio & Alternatif Tanpa No Jio)",
+      "title": "Riset alternatif daftar Google One tanpa no Jio",
+      "description": "Identifikasi cara umum berlangganan Google One tanpa nomor Jio (mis. langsung dari Google), beserta pertimbangan wilayah/ketersediaan agar tidak menyesatkan.",
+      "assignee": "Sinta",
+      "role": "Marketing / Growth",
+      "status": "pending",
+      "column": "backlog",
+      "createdAt": "2026-10-24T11:30:00.000Z"
+    }
+  ]
 }

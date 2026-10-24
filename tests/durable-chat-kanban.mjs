@@ -460,5 +460,73 @@ describe('TASK-023: Durable Chat and Kanban Approval Tests', () => {
       assert(taskA && taskB);
       assert.notStrictEqual(taskA.id, taskB.id, 'Task IDs must not collide even when original IDs are identical');
     });
+
+    it('PATCH /api/kanban/tasks/:id moves task across columns and updates status', async () => {
+      await apiRequest('POST', '/api/chat/approve-plan', { plan: samplePlan });
+
+      const patchRes = await apiRequest('PATCH', '/api/kanban/tasks/TASK-1', { column: 'in_progress' });
+      assert.strictEqual(patchRes.status, 200);
+      assert.strictEqual(patchRes.data.task.column, 'in_progress');
+      assert.strictEqual(patchRes.data.task.status, 'in_progress');
+
+      const patchDoneRes = await apiRequest('PATCH', '/api/kanban/tasks/TASK-1', { column: 'done' });
+      assert.strictEqual(patchDoneRes.status, 200);
+      assert.strictEqual(patchDoneRes.data.task.column, 'done');
+      assert.strictEqual(patchDoneRes.data.task.status, 'done');
+    });
+
+    it('DELETE /api/kanban/tasks/:id removes task from Kanban', async () => {
+      await apiRequest('POST', '/api/chat/approve-plan', { plan: samplePlan });
+
+      const delRes = await apiRequest('DELETE', '/api/kanban/tasks/TASK-1');
+      assert.strictEqual(delRes.status, 200);
+      assert.strictEqual(delRes.data.task.id, 'TASK-1');
+
+      const kanbanRes = await apiRequest('GET', '/api/kanban/tasks');
+      assert.strictEqual(kanbanRes.data.tasks.length, 2);
+      assert(!kanbanRes.data.tasks.some(t => t.id === 'TASK-1'));
+    });
+
+    it('POST /api/kanban/tasks creates a new custom task', async () => {
+      const createRes = await apiRequest('POST', '/api/kanban/tasks', {
+        title: 'Task Tambahan Tim',
+        assignee: 'Sinta',
+        role: 'Marketing / Growth',
+        column: 'backlog'
+      });
+      assert.strictEqual(createRes.status, 201);
+      assert.strictEqual(createRes.data.task.title, 'Task Tambahan Tim');
+      assert.strictEqual(createRes.data.task.assignee, 'Sinta');
+      assert.strictEqual(createRes.data.task.column, 'backlog');
+    });
+
+    it('POST /api/chat with "setuju" auto-approves pending plan into Kanban', async () => {
+      // 1. Leader proposed a plan
+      saveChatMessage('leader', {
+        type: 'assistant',
+        mode: 'leader',
+        phase: 'awaiting_confirmation',
+        plan: samplePlan,
+        confirmation_prompt: 'Apakah rencana sudah sesuai? Balas "setuju"'
+      });
+
+      // 2. User replies "setuju"
+      const res = await apiRequest('POST', '/api/chat', {
+        message: 'setuju',
+        mode: 'leader'
+      });
+
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.phase, 'approved');
+      assert.strictEqual(res.data.kanbanCreated, true);
+      assert.strictEqual(res.data.approval.status, 'approved');
+      assert(res.data.reply.includes('Terima kasih, konfirmasi sudah saya terima'));
+
+      // Verify tasks in Kanban
+      const kanbanRes = await apiRequest('GET', '/api/kanban/tasks');
+      assert.strictEqual(kanbanRes.status, 200);
+      assert.strictEqual(kanbanRes.data.tasks.length, 3);
+      assert.strictEqual(kanbanRes.data.tasks[0].assignee, 'Dimas');
+    });
   });
 });

@@ -145,9 +145,9 @@ function safeReadJsonSync(filePath, fallback) {
 // ─────────────────────────────────────────────────────────────
 
 const DEFAULT_CHAT_STORE = {
-  leader: { sessionId: null, messages: [] },
-  chat: { sessionId: null, messages: [] },
-  orchestrator: { sessionId: null, messages: [] }
+  leader: { sessionId: null, messages: [], threads: [], activeThreadId: null },
+  chat: { sessionId: null, messages: [], threads: [], activeThreadId: null },
+  orchestrator: { sessionId: null, messages: [], threads: [], activeThreadId: null }
 };
 
 export function loadChatStore() {
@@ -155,20 +155,49 @@ export function loadChatStore() {
   if (!data) {
     return JSON.parse(JSON.stringify(DEFAULT_CHAT_STORE));
   }
-  return {
+  const result = {
     leader: {
       sessionId: data.leader?.sessionId || null,
-      messages: Array.isArray(data.leader?.messages) ? data.leader.messages : []
+      messages: Array.isArray(data.leader?.messages) ? data.leader.messages : [],
+      threads: Array.isArray(data.leader?.threads) ? data.leader.threads : [],
+      activeThreadId: data.leader?.activeThreadId || null
     },
     chat: {
       sessionId: data.chat?.sessionId || null,
-      messages: Array.isArray(data.chat?.messages) ? data.chat.messages : []
+      messages: Array.isArray(data.chat?.messages) ? data.chat.messages : [],
+      threads: Array.isArray(data.chat?.threads) ? data.chat.threads : [],
+      activeThreadId: data.chat?.activeThreadId || null
     },
     orchestrator: {
       sessionId: data.orchestrator?.sessionId || null,
-      messages: Array.isArray(data.orchestrator?.messages) ? data.orchestrator.messages : []
+      messages: Array.isArray(data.orchestrator?.messages) ? data.orchestrator.messages : [],
+      threads: Array.isArray(data.orchestrator?.threads) ? data.orchestrator.threads : [],
+      activeThreadId: data.orchestrator?.activeThreadId || null
     }
   };
+
+  // Ensure initial thread exists if there are messages but no threads
+  ['leader', 'chat', 'orchestrator'].forEach(m => {
+    const modeObj = result[m];
+    if (modeObj.threads.length === 0 && modeObj.messages.length > 0) {
+      const planMsg = modeObj.messages.find(msg => msg.plan);
+      const title = planMsg?.plan?.title || modeObj.messages[0]?.text?.slice(0, 36) || 'Obrolan Utama';
+      const initialThread = {
+        id: `thread_${m}_initial`,
+        title,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        planId: planMsg?.plan?.id || null,
+        projectName: planMsg?.plan?.title || null,
+        sessionId: modeObj.sessionId,
+        messages: [...modeObj.messages]
+      };
+      modeObj.threads.push(initialThread);
+      modeObj.activeThreadId = initialThread.id;
+    }
+  });
+
+  return result;
 }
 
 export function saveChatStore(store) {
@@ -181,13 +210,15 @@ export function getChatHistory(mode = null) {
     return {
       mode,
       sessionId: store[mode].sessionId,
-      messages: store[mode].messages
+      messages: store[mode].messages,
+      threads: store[mode].threads || [],
+      activeThreadId: store[mode].activeThreadId || null
     };
   }
   return store;
 }
 
-export function saveChatMessage(mode, messageData, sessionId = undefined) {
+export function saveChatMessage(mode, messageData, sessionId = undefined, threadId = null) {
   if (!['leader', 'chat', 'orchestrator'].includes(mode)) {
     throw new Error(`Invalid mode for chat storage: ${mode}`);
   }
@@ -202,20 +233,190 @@ export function saveChatMessage(mode, messageData, sessionId = undefined) {
     ...messageData
   };
 
-  store[mode].messages.push(message);
+  const modeObj = store[mode];
+  modeObj.messages.push(message);
 
   if (sessionId !== undefined) {
-    store[mode].sessionId = sessionId;
+    modeObj.sessionId = sessionId;
+  }
+
+  // Manage threads
+  const targetId = threadId || modeObj.activeThreadId;
+  let targetThread = null;
+  if (targetId) {
+    targetThread = modeObj.threads.find(t => t.id === targetId);
+  }
+
+  if (!targetThread) {
+    if (modeObj.threads.length > 0) {
+      targetThread = modeObj.threads[0];
+    } else {
+      const planTitle = message.plan?.title || (message.text ? message.text.slice(0, 32) : 'Obrolan Baru');
+      targetThread = {
+        id: `thread_${mode}_${Date.now()}`,
+        title: planTitle,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        planId: message.plan?.id || null,
+        projectName: message.plan?.title || null,
+        sessionId: sessionId || modeObj.sessionId,
+        messages: []
+      };
+      modeObj.threads.push(targetThread);
+      modeObj.activeThreadId = targetThread.id;
+    }
+  }
+
+  if (targetThread) {
+    if (!targetThread.messages.some(m => m.id === message.id)) {
+      targetThread.messages.push(message);
+    }
+    targetThread.updatedAt = new Date().toISOString();
+    if (sessionId !== undefined) {
+      targetThread.sessionId = sessionId;
+    }
+    if (message.plan) {
+      targetThread.planId = message.plan.id;
+      targetThread.projectName = message.plan.title;
+      if (!targetThread.title || targetThread.title === 'Obrolan Baru' || targetThread.title === 'Obrolan Utama') {
+        targetThread.title = message.plan.title;
+      }
+    }
   }
 
   saveChatStore(store);
   return message;
 }
 
-export async function saveChatMessageSafe(mode, messageData, sessionId = undefined) {
+export async function saveChatMessageSafe(mode, messageData, sessionId = undefined, threadId = null) {
   return chatMutex.runExclusive(async () => {
-    return saveChatMessage(mode, messageData, sessionId);
+    return saveChatMessage(mode, messageData, sessionId, threadId);
   });
+}
+
+export function getChatThreads(mode) {
+  if (!['leader', 'chat', 'orchestrator'].includes(mode)) {
+    throw new Error(`Invalid mode: ${mode}`);
+  }
+  const store = loadChatStore();
+  const modeObj = store[mode];
+  return {
+    threads: (modeObj.threads || []).map(t => ({
+      id: t.id,
+      title: t.title,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      messageCount: t.messages?.length || 0,
+      lastMessage: t.messages?.[t.messages.length - 1]?.text || '',
+      planId: t.planId || null,
+      projectName: t.projectName || null,
+      sessionId: t.sessionId || null
+    })),
+    activeThreadId: modeObj.activeThreadId
+  };
+}
+
+export function getChatThread(mode, threadId) {
+  if (!['leader', 'chat', 'orchestrator'].includes(mode)) {
+    throw new Error(`Invalid mode: ${mode}`);
+  }
+  const store = loadChatStore();
+  const thread = store[mode].threads.find(t => t.id === threadId);
+  if (!thread) return null;
+  return thread;
+}
+
+export function createChatThread(mode, { title = 'Obrolan Baru', planId = null, projectName = null } = {}) {
+  if (!['leader', 'chat', 'orchestrator'].includes(mode)) {
+    throw new Error(`Invalid mode: ${mode}`);
+  }
+  const store = loadChatStore();
+  const modeObj = store[mode];
+  const newThread = {
+    id: `thread_${mode}_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+    title: (title || 'Obrolan Baru').trim(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    planId: planId || null,
+    projectName: projectName || null,
+    sessionId: null,
+    messages: []
+  };
+
+  modeObj.threads.unshift(newThread);
+  modeObj.activeThreadId = newThread.id;
+  modeObj.messages = [];
+  modeObj.sessionId = null;
+
+  saveChatStore(store);
+  return newThread;
+}
+
+export function setActiveChatThread(mode, threadId) {
+  if (!['leader', 'chat', 'orchestrator'].includes(mode)) {
+    throw new Error(`Invalid mode: ${mode}`);
+  }
+  const store = loadChatStore();
+  const modeObj = store[mode];
+  const thread = modeObj.threads.find(t => t.id === threadId);
+  if (!thread) {
+    throw new Error(`Thread "${threadId}" not found in mode ${mode}`);
+  }
+
+  modeObj.activeThreadId = thread.id;
+  modeObj.messages = [...(thread.messages || [])];
+  modeObj.sessionId = thread.sessionId || null;
+
+  saveChatStore(store);
+  return thread;
+}
+
+export function deleteChatThread(mode, threadId) {
+  if (!['leader', 'chat', 'orchestrator'].includes(mode)) {
+    throw new Error(`Invalid mode: ${mode}`);
+  }
+  const store = loadChatStore();
+  const modeObj = store[mode];
+  const idx = modeObj.threads.findIndex(t => t.id === threadId);
+  if (idx === -1) {
+    throw new Error(`Thread "${threadId}" not found in mode ${mode}`);
+  }
+
+  const [deleted] = modeObj.threads.splice(idx, 1);
+  if (modeObj.activeThreadId === threadId) {
+    if (modeObj.threads.length > 0) {
+      modeObj.activeThreadId = modeObj.threads[0].id;
+      modeObj.messages = [...(modeObj.threads[0].messages || [])];
+      modeObj.sessionId = modeObj.threads[0].sessionId || null;
+    } else {
+      modeObj.activeThreadId = null;
+      modeObj.messages = [];
+      modeObj.sessionId = null;
+    }
+  }
+
+  saveChatStore(store);
+  return deleted;
+}
+
+export function updateChatThread(mode, threadId, updates) {
+  if (!['leader', 'chat', 'orchestrator'].includes(mode)) {
+    throw new Error(`Invalid mode: ${mode}`);
+  }
+  const store = loadChatStore();
+  const modeObj = store[mode];
+  const thread = modeObj.threads.find(t => t.id === threadId);
+  if (!thread) {
+    throw new Error(`Thread "${threadId}" not found in mode ${mode}`);
+  }
+
+  if (updates.title !== undefined) thread.title = updates.title.trim();
+  if (updates.planId !== undefined) thread.planId = updates.planId;
+  if (updates.projectName !== undefined) thread.projectName = updates.projectName;
+  thread.updatedAt = new Date().toISOString();
+
+  saveChatStore(store);
+  return thread;
 }
 
 export function updateChatMessage(mode, messageId, updates) {
@@ -234,6 +435,19 @@ export function updateChatMessage(mode, messageId, updates) {
     ...updates
   };
 
+  // Also update inside threads
+  if (Array.isArray(store[mode].threads)) {
+    store[mode].threads.forEach(t => {
+      const tIdx = t.messages?.findIndex(m => m.id === messageId);
+      if (tIdx !== -1 && tIdx !== undefined) {
+        t.messages[tIdx] = {
+          ...t.messages[tIdx],
+          ...updates
+        };
+      }
+    });
+  }
+
   saveChatStore(store);
   return store[mode].messages[idx];
 }
@@ -251,17 +465,21 @@ export function setChatSessionId(mode, sessionId) {
 
   const store = loadChatStore();
   store[mode].sessionId = sessionId;
+  if (store[mode].activeThreadId) {
+    const thread = store[mode].threads?.find(t => t.id === store[mode].activeThreadId);
+    if (thread) thread.sessionId = sessionId;
+  }
   saveChatStore(store);
 }
 
 export function clearChatHistory(mode = null) {
   const store = loadChatStore();
   if (mode && ['leader', 'chat', 'orchestrator'].includes(mode)) {
-    store[mode] = { sessionId: null, messages: [] };
+    store[mode] = { sessionId: null, messages: [], threads: [], activeThreadId: null };
   } else {
-    store.leader = { sessionId: null, messages: [] };
-    store.chat = { sessionId: null, messages: [] };
-    store.orchestrator = { sessionId: null, messages: [] };
+    store.leader = { sessionId: null, messages: [], threads: [], activeThreadId: null };
+    store.chat = { sessionId: null, messages: [], threads: [], activeThreadId: null };
+    store.orchestrator = { sessionId: null, messages: [], threads: [], activeThreadId: null };
   }
   saveChatStore(store);
   return store;
@@ -274,7 +492,7 @@ export async function clearChatHistorySafe(mode = null) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// KANBAN STORAGE
+// KANBAN STORAGE (PROJECT-SCOPED & GLOBAL)
 // ─────────────────────────────────────────────────────────────
 
 const DEFAULT_KANBAN_STORE = {
@@ -284,6 +502,7 @@ const DEFAULT_KANBAN_STORE = {
     { id: 'done', name: 'Done', position: 3 }
   ],
   approvedPlans: {},
+  projects: [],
   tasks: []
 };
 
@@ -295,6 +514,7 @@ export function loadKanbanStore() {
   return {
     columns: Array.isArray(data.columns) && data.columns.length > 0 ? data.columns : DEFAULT_KANBAN_STORE.columns,
     approvedPlans: data.approvedPlans && typeof data.approvedPlans === 'object' ? data.approvedPlans : {},
+    projects: Array.isArray(data.projects) ? data.projects : [],
     tasks: Array.isArray(data.tasks) ? data.tasks : []
   };
 }
@@ -303,9 +523,119 @@ export function saveKanbanStore(store) {
   safeWriteJsonSync(kanbanStoragePath, store);
 }
 
-export function getKanbanTasks() {
+export function getKanbanTasks(projectId = null) {
   const store = loadKanbanStore();
+  if (projectId && projectId !== 'all') {
+    return store.tasks.filter(t => t.planId === projectId || t.projectId === projectId);
+  }
   return store.tasks;
+}
+
+export function getKanbanProjects() {
+  const store = loadKanbanStore();
+  const projectsMap = {};
+
+  if (Array.isArray(store.projects)) {
+    store.projects.forEach(p => {
+      if (p && p.id) {
+        projectsMap[p.id] = {
+          id: p.id,
+          name: p.name || 'Proyek Tanpa Judul',
+          description: p.description || '',
+          goal: p.goal || '',
+          scope: p.scope || '',
+          createdAt: p.createdAt || new Date().toISOString()
+        };
+      }
+    });
+  }
+
+  if (store.approvedPlans) {
+    Object.entries(store.approvedPlans).forEach(([key, plan]) => {
+      const pId = plan.planId || key;
+      if (!projectsMap[pId]) {
+        projectsMap[pId] = {
+          id: pId,
+          name: plan.planTitle || 'Proyek Terencana',
+          description: '',
+          goal: '',
+          scope: '',
+          createdAt: plan.approvedAt || new Date().toISOString()
+        };
+      }
+    });
+  }
+
+  if (Array.isArray(store.tasks)) {
+    store.tasks.forEach(t => {
+      const pId = t.planId || t.projectId;
+      if (pId && !projectsMap[pId]) {
+        projectsMap[pId] = {
+          id: pId,
+          name: t.planTitle || t.projectName || 'Proyek',
+          description: '',
+          goal: '',
+          scope: '',
+          createdAt: t.createdAt || new Date().toISOString()
+        };
+      }
+    });
+  }
+
+  return Object.values(projectsMap).map(project => {
+    const projectTasks = store.tasks.filter(t => (t.planId === project.id || t.projectId === project.id));
+    const backlog = projectTasks.filter(t => (t.column === 'backlog' || t.status === 'pending')).length;
+    const in_progress = projectTasks.filter(t => t.column === 'in_progress').length;
+    const done = projectTasks.filter(t => t.column === 'done').length;
+
+    return {
+      ...project,
+      taskCount: projectTasks.length,
+      backlog,
+      in_progress,
+      done
+    };
+  });
+}
+
+export function createKanbanProject({ name, goal = '', scope = '', description = '' }) {
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    throw new Error('Project name is required');
+  }
+
+  const store = loadKanbanStore();
+  if (!Array.isArray(store.projects)) {
+    store.projects = [];
+  }
+
+  const id = `proj_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+  const newProject = {
+    id,
+    name: name.trim(),
+    goal: goal.trim(),
+    scope: scope.trim(),
+    description: description.trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  store.projects.push(newProject);
+  saveKanbanStore(store);
+  return newProject;
+}
+
+export function deleteKanbanProject(projectId) {
+  const store = loadKanbanStore();
+  if (Array.isArray(store.projects)) {
+    const pIdx = store.projects.findIndex(p => p.id === projectId);
+    if (pIdx !== -1) store.projects.splice(pIdx, 1);
+  }
+  if (store.approvedPlans && store.approvedPlans[projectId]) {
+    delete store.approvedPlans[projectId];
+  }
+
+  store.tasks = store.tasks.filter(t => t.planId !== projectId && t.projectId !== projectId);
+  saveKanbanStore(store);
+  return { success: true, projectId };
 }
 
 export function approvePlan({ plan, planId, idempotencyKey, teamMembers = [] }) {
@@ -413,7 +743,9 @@ export function approvePlan({ plan, planId, idempotencyKey, teamMembers = [] }) 
     return {
       id: taskId,
       planId: derivedPlanId,
+      projectId: derivedPlanId,
       planTitle: normalizedTitle,
+      projectName: normalizedTitle,
       title: t.title.trim(),
       description: (t.description || '').trim(),
       assignee: assignedName,
@@ -426,6 +758,18 @@ export function approvePlan({ plan, planId, idempotencyKey, teamMembers = [] }) 
 
   // Append new tasks to Kanban store
   store.tasks.push(...createdTasks);
+
+  // Ensure project is registered in store.projects
+  if (!Array.isArray(store.projects)) store.projects = [];
+  if (!store.projects.some(p => p.id === derivedPlanId)) {
+    store.projects.push({
+      id: derivedPlanId,
+      name: normalizedTitle,
+      goal: plan.goal || '',
+      scope: plan.scope || '',
+      createdAt: new Date().toISOString()
+    });
+  }
 
   // Record approved plan for idempotency
   store.approvedPlans[key] = {
@@ -466,3 +810,114 @@ export async function clearKanbanStoreSafe() {
     return clearKanbanStore();
   });
 }
+
+export function updateKanbanTask(taskId, updates) {
+  if (!taskId || typeof taskId !== 'string') {
+    throw new Error('taskId is required');
+  }
+  const store = loadKanbanStore();
+  const idx = store.tasks.findIndex(t => t.id === taskId);
+  if (idx === -1) {
+    throw new Error(`Task "${taskId}" not found in Kanban store`);
+  }
+
+  const existing = store.tasks[idx];
+  let column = updates.column !== undefined ? updates.column : existing.column;
+  let status = updates.status !== undefined ? updates.status : existing.status;
+
+  if (updates.column && !updates.status) {
+    if (updates.column === 'backlog') status = 'pending';
+    else if (updates.column === 'in_progress') status = 'in_progress';
+    else if (updates.column === 'done') status = 'done';
+  } else if (updates.status && !updates.column) {
+    if (updates.status === 'pending') column = 'backlog';
+    else if (updates.status === 'in_progress') column = 'in_progress';
+    else if (updates.status === 'done') column = 'done';
+  }
+
+  store.tasks[idx] = {
+    ...existing,
+    ...(updates.title !== undefined && { title: updates.title.trim() }),
+    ...(updates.description !== undefined && { description: updates.description.trim() }),
+    ...(updates.assignee !== undefined && { assignee: updates.assignee.trim() }),
+    ...(updates.role !== undefined && { role: updates.role.trim() }),
+    column,
+    status,
+    updatedAt: new Date().toISOString()
+  };
+
+  saveKanbanStore(store);
+  return store.tasks[idx];
+}
+
+export async function updateKanbanTaskSafe(taskId, updates) {
+  return kanbanMutex.runExclusive(async () => {
+    return updateKanbanTask(taskId, updates);
+  });
+}
+
+export function deleteKanbanTask(taskId) {
+  if (!taskId || typeof taskId !== 'string') {
+    throw new Error('taskId is required');
+  }
+  const store = loadKanbanStore();
+  const idx = store.tasks.findIndex(t => t.id === taskId);
+  if (idx === -1) {
+    throw new Error(`Task "${taskId}" not found in Kanban store`);
+  }
+  const deleted = store.tasks.splice(idx, 1)[0];
+  saveKanbanStore(store);
+  return deleted;
+}
+
+export async function deleteKanbanTaskSafe(taskId) {
+  return kanbanMutex.runExclusive(async () => {
+    return deleteKanbanTask(taskId);
+  });
+}
+
+export function createKanbanTask(taskData) {
+  if (!taskData || typeof taskData !== 'object') {
+    throw new Error('taskData is required');
+  }
+  const title = (taskData.title || '').trim();
+  if (!title) {
+    throw new Error('Task title is required');
+  }
+
+  const store = loadKanbanStore();
+  const baseId = taskData.id ? taskData.id.trim() : `TASK-${store.tasks.length + 1}`;
+  let taskId = baseId;
+  let counter = 1;
+  while (store.tasks.some(t => t.id === taskId)) {
+    taskId = `${baseId}-${counter++}`;
+  }
+
+  const column = taskData.column || 'backlog';
+  const status = taskData.status || (column === 'done' ? 'done' : column === 'in_progress' ? 'in_progress' : 'pending');
+
+  const newTask = {
+    id: taskId,
+    projectId: taskData.projectId || null,
+    planId: taskData.planId || null,
+    planTitle: (taskData.planTitle || '').trim() || 'Manual Task',
+    title,
+    description: (taskData.description || '').trim(),
+    assignee: (taskData.assignee || 'Arif').trim(),
+    role: (taskData.role || 'Team Member').trim(),
+    column,
+    status,
+    createdAt: new Date().toISOString()
+  };
+
+  store.tasks.push(newTask);
+  saveKanbanStore(store);
+  return newTask;
+}
+
+export async function createKanbanTaskSafe(taskData) {
+  return kanbanMutex.runExclusive(async () => {
+    return createKanbanTask(taskData);
+  });
+}
+

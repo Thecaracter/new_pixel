@@ -1,14 +1,31 @@
 {
   "leader": {
     "sessionId": null,
-    "messages": []
+    "messages": [],
+    "threads": [
+      {
+        "id": "thread_leader_1792847324492_f2d107",
+        "title": "Obrolan Baru",
+        "createdAt": "2026-10-24T13:08:44.493Z",
+        "updatedAt": "2026-10-24T13:08:44.493Z",
+        "planId": null,
+        "projectName": null,
+        "sessionId": null,
+        "messages": []
+      }
+    ],
+    "activeThreadId": "thread_leader_1792847324492_f2d107"
   },
   "chat": {
     "sessionId": null,
-    "messages": []
+    "messages": [],
+    "threads": [],
+    "activeThreadId": null
   },
   "orchestrator": {
     "sessionId": null,
-    "messages": []
+    "messages": [],
+    "threads": [],
+    "activeThreadId": null
   }
 }

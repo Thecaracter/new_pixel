@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 
 // Clean, high-craft SVG icons replacing AI-slop emojis
 function IconCoordinator() {
@@ -92,6 +92,23 @@ function IconArrowRight() {
   );
 }
 
+function IconTrash() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function IconFolder() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
 /**
  * Team members roster fallback for Pixel Works Virtual Office
  */
@@ -110,15 +127,39 @@ const DEFAULT_ROSTER = [
  * Connects to local OpenCode backend via /api/chat endpoint
  * Keeps session state and message history completely isolated between modes
  */
-export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
+const loadCachedChatStore = () => {
+  try {
+    const raw = localStorage.getItem('kantor_virtual_chat_history');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch (_) {}
+  return null;
+};
+
+export function ChatPanel({
+  externalTeamMembers,
+  onRefreshTeam,
+  onOpenKanban,
+  onToggleExpand,
+  isExpanded,
+  onClose
+} = {}) {
+  const initialCache = useRef(loadCachedChatStore()).current;
   const [mode, setMode] = useState('leader'); // 'leader' | 'chat' | 'orchestrator'
-  const [chatMessages, setChatMessages] = useState([]);
-  const [leaderMessages, setLeaderMessages] = useState([]);
-  const [orchestratorMessages, setOrchestratorMessages] = useState([]);
-  const [chatSessionId, setChatSessionId] = useState(null);
-  const [leaderSessionId, setLeaderSessionId] = useState(null);
-  const [orchestratorSessionId, setOrchestratorSessionId] = useState(null);
+  const [chatMessages, setChatMessages] = useState(initialCache?.chat?.messages || []);
+  const [leaderMessages, setLeaderMessages] = useState(initialCache?.leader?.messages || []);
+  const [orchestratorMessages, setOrchestratorMessages] = useState(initialCache?.orchestrator?.messages || []);
+  const [chatSessionId, setChatSessionId] = useState(initialCache?.chat?.sessionId || null);
+  const [leaderSessionId, setLeaderSessionId] = useState(initialCache?.leader?.sessionId || null);
+  const [orchestratorSessionId, setOrchestratorSessionId] = useState(initialCache?.orchestrator?.sessionId || null);
   const [teamMembers, setTeamMembers] = useState(externalTeamMembers || DEFAULT_ROSTER);
+
+  // Thread management state
+  const [threads, setThreads] = useState([]);
+  const [activeThreadId, setActiveThreadId] = useState(null);
+  const [isThreadsDrawerOpen, setIsThreadsDrawerOpen] = useState(false);
 
   // Synchronize when external roster updates
   useEffect(() => {
@@ -126,6 +167,18 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
       setTeamMembers(externalTeamMembers);
     }
   }, [externalTeamMembers]);
+
+  // Dual-layer persistence sync to localStorage
+  useEffect(() => {
+    try {
+      const payload = {
+        leader: { messages: leaderMessages, sessionId: leaderSessionId },
+        chat: { messages: chatMessages, sessionId: chatSessionId },
+        orchestrator: { messages: orchestratorMessages, sessionId: orchestratorSessionId }
+      };
+      localStorage.setItem('kantor_virtual_chat_history', JSON.stringify(payload));
+    } catch (_) {}
+  }, [leaderMessages, leaderSessionId, chatMessages, chatSessionId, orchestratorMessages, orchestratorSessionId]);
 
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -148,7 +201,139 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
   const inputRef = useRef(null);
   const stepperInputRef = useRef(null);
 
-  // Fetch available models, team roster, and durable chat history on mount
+  // Fetch threads for current mode
+  const fetchThreads = useCallback(async (preferredId = null) => {
+    try {
+      const res = await fetch(`/api/chat/threads?mode=${mode}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.threads)) {
+          setThreads(data.threads);
+          const currentActive = preferredId || data.activeThreadId || (data.threads[0]?.id || null);
+          setActiveThreadId(currentActive);
+          return { threads: data.threads, activeId: currentActive };
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch chat threads:', e);
+    }
+    return null;
+  }, [mode]);
+
+  // Load thread messages for specific thread
+  const loadThreadMessages = useCallback(async (threadId) => {
+    if (!threadId) return;
+    try {
+      const res = await fetch(`/api/chat/threads/${encodeURIComponent(threadId)}?mode=${mode}`);
+      if (res.ok) {
+        const data = await res.json();
+        const thread = data.thread;
+        if (thread) {
+          if (mode === 'leader') {
+            setLeaderMessages(thread.messages || []);
+            setLeaderSessionId(thread.sessionId || null);
+          } else if (mode === 'orchestrator') {
+            setOrchestratorMessages(thread.messages || []);
+            setOrchestratorSessionId(thread.sessionId || null);
+          } else {
+            setChatMessages(thread.messages || []);
+            setChatSessionId(thread.sessionId || null);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load thread messages:', e);
+    }
+  }, [mode]);
+
+  // Create clean new chat thread
+  const handleCreateNewThread = async () => {
+    try {
+      const res = await fetch('/api/chat/threads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, title: 'Obrolan Baru' })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.thread) {
+          setThreads(prev => [data.thread, ...prev.filter(t => t.id !== data.thread.id)]);
+          setActiveThreadId(data.thread.id);
+          if (mode === 'leader') {
+            setLeaderMessages([]);
+            setLeaderSessionId(null);
+          } else if (mode === 'orchestrator') {
+            setOrchestratorMessages([]);
+            setOrchestratorSessionId(null);
+          } else {
+            setChatMessages([]);
+            setChatSessionId(null);
+          }
+          setQuestionStep({});
+          setQuestionAnswers({});
+          setIsThreadsDrawerOpen(false);
+          setTimeout(() => inputRef.current?.focus(), 80);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to create new chat thread:', e);
+    }
+  };
+
+  // Switch to selected thread
+  const handleSelectThread = async (tId) => {
+    if (tId === activeThreadId) {
+      setIsThreadsDrawerOpen(false);
+      return;
+    }
+    try {
+      await fetch(`/api/chat/threads/${encodeURIComponent(tId)}/active`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      });
+      setActiveThreadId(tId);
+      await loadThreadMessages(tId);
+      setIsThreadsDrawerOpen(false);
+    } catch (e) {
+      console.error('Failed to switch thread:', e);
+    }
+  };
+
+  // Delete thread
+  const handleDeleteThread = async (tId, e) => {
+    e?.stopPropagation();
+    if (!window.confirm('Hapus riwayat percakapan ini?')) return;
+    try {
+      const res = await fetch(`/api/chat/threads/${encodeURIComponent(tId)}?mode=${mode}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const updated = threads.filter(t => t.id !== tId);
+        setThreads(updated);
+        if (activeThreadId === tId) {
+          if (updated.length > 0) {
+            handleSelectThread(updated[0].id);
+          } else {
+            handleCreateNewThread();
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to delete thread:', e);
+    }
+  };
+
+  // Sync threads on mount and mode switch
+  useEffect(() => {
+    fetchThreads().then(result => {
+      if (result?.activeId) {
+        loadThreadMessages(result.activeId);
+      }
+    });
+  }, [mode, fetchThreads, loadThreadMessages]);
+
+  // Fetch available models and team roster on mount
   useEffect(() => {
     const fetchModels = async () => {
       try {
@@ -199,43 +384,8 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
       }
     };
 
-    const fetchChatHistory = async () => {
-      try {
-        const response = await fetch('/api/chat/history');
-        if (response.ok) {
-          const contentType = response.headers.get('content-type') || '';
-          if (contentType.includes('application/json')) {
-            const data = await response.json();
-            if (data.history) {
-              if (Array.isArray(data.history.leader?.messages)) {
-                setLeaderMessages(data.history.leader.messages);
-              }
-              if (data.history.leader?.sessionId) {
-                setLeaderSessionId(data.history.leader.sessionId);
-              }
-              if (Array.isArray(data.history.chat?.messages)) {
-                setChatMessages(data.history.chat.messages);
-              }
-              if (data.history.chat?.sessionId) {
-                setChatSessionId(data.history.chat.sessionId);
-              }
-              if (Array.isArray(data.history.orchestrator?.messages)) {
-                setOrchestratorMessages(data.history.orchestrator.messages);
-              }
-              if (data.history.orchestrator?.sessionId) {
-                setOrchestratorSessionId(data.history.orchestrator.sessionId);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Could not load durable chat history:', err);
-      }
-    };
-
     fetchModels();
     fetchTeam();
-    fetchChatHistory();
   }, []);
 
   // Active messages based on mode
@@ -339,7 +489,8 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
           planId,
           idempotencyKey: planId,
           messageId: message.id,
-          mode
+          mode,
+          threadId: activeThreadId
         })
       });
 
@@ -408,7 +559,13 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
     const activeSessionId = isLeader ? leaderSessionId : isOrchestrator ? orchestratorSessionId : chatSessionId;
 
     // Add user message to active thread
-    const userMessage = { type: 'user', text: trimmedInput, mode: currentMode };
+    const userMessage = {
+      id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      timestamp: Date.now(),
+      type: 'user',
+      text: trimmedInput,
+      mode: currentMode
+    };
     if (isLeader) {
       setLeaderMessages(prev => [...prev, userMessage]);
     } else if (isOrchestrator) {
@@ -427,6 +584,7 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
         message: trimmedInput,
         sessionId: activeSessionId,
         model: selectedModel,
+        threadId: activeThreadId
       };
 
       if (isLeader) {
@@ -476,11 +634,34 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
         setCurrentModel(data.model);
       }
 
+      // If response includes plan approval (e.g. from user saying "setuju"), update prior plan messages
+      if (data.approval || data.phase === 'approved') {
+        const approvalRecord = data.approval || {
+          status: 'approved',
+          alreadyApproved: true,
+          approvedAt: new Date().toISOString(),
+          planId: data.plan?.id,
+          count: data.tasks?.length || 0,
+          tasks: data.tasks || []
+        };
+        if (isLeader) {
+          setLeaderMessages(prev => prev.map(m =>
+            m.plan && (!m.approval || m.approval.status !== 'approved') ? { ...m, approval: approvalRecord } : m
+          ));
+        } else if (isOrchestrator) {
+          setOrchestratorMessages(prev => prev.map(m =>
+            m.plan && (!m.approval || m.approval.status !== 'approved') ? { ...m, approval: approvalRecord } : m
+          ));
+        }
+      }
+
       // Append assistant response to appropriate mode
       if (isOrchestrator) {
         setOrchestratorMessages(prev => [
           ...prev,
           {
+            id: data.id || `ast_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            timestamp: Date.now(),
             type: 'assistant',
             mode: 'orchestrator',
             text: data.reply,
@@ -488,6 +669,9 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
             questions: data.questions || [],
             plan: data.plan || null,
             confirmation_prompt: data.confirmation_prompt || null,
+            approval: data.approval || null,
+            tasks: data.tasks || [],
+            kanbanCreated: data.kanbanCreated || false,
             delegations: data.delegations || [],
             agentResults: data.agentResults || [],
             discussions: data.discussions || [],
@@ -499,6 +683,8 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
         setLeaderMessages(prev => [
           ...prev,
           {
+            id: data.id || `ast_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            timestamp: Date.now(),
             type: 'assistant',
             mode: 'leader',
             text: data.reply,
@@ -506,6 +692,9 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
             questions: data.questions || [],
             plan: data.plan || null,
             confirmation_prompt: data.confirmation_prompt || null,
+            approval: data.approval || null,
+            tasks: data.tasks || [],
+            kanbanCreated: data.kanbanCreated || false,
             valid: data.valid,
             roster: data.roster || teamMembers
           }
@@ -513,7 +702,13 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
       } else {
         setChatMessages(prev => [
           ...prev,
-          { type: 'assistant', mode: 'chat', text: data.reply }
+          {
+            id: data.id || `ast_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            timestamp: Date.now(),
+            type: 'assistant',
+            mode: 'chat',
+            text: data.reply
+          }
         ]);
       }
     } catch (err) {
@@ -534,6 +729,7 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
       }
     } finally {
       setLoading(false);
+      fetchThreads(activeThreadId);
     }
   };
 
@@ -546,10 +742,139 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
   };
 
   const isEmpty = currentMessages.length === 0;
+  const activeThread = threads.find(t => t.id === activeThreadId);
 
   return (
     <section className="chat-panel" aria-label="Virtual Office Chat & Coordination">
       <div className="chat-container">
+        {/* Top Thread Workspace Bar: Thread Switcher, New Chat Button, & Window Controls */}
+        <div className="chat-thread-toolbar">
+          <div className="thread-toolbar-left">
+            <button
+              type="button"
+              className={`thread-drawer-trigger-btn ${isThreadsDrawerOpen ? 'active' : ''}`}
+              onClick={() => setIsThreadsDrawerOpen(prev => !prev)}
+              title="Buka daftar riwayat percakapan / proyek"
+            >
+              <span className="thread-trigger-icon">💬</span>
+              <span className="active-thread-title">
+                {activeThread?.title || 'Obrolan Utama'}
+              </span>
+              <span className="thread-count-badge">{threads.length}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              className="new-chat-btn"
+              onClick={handleCreateNewThread}
+              title="Mulai obrolan bersih baru tanpa riwayat sebelumnya"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>+ Chat Baru</span>
+            </button>
+          </div>
+
+          <div className="thread-toolbar-right">
+            {onToggleExpand && (
+              <button
+                type="button"
+                className="chat-pane-tool-btn"
+                onClick={onToggleExpand}
+                title={isExpanded ? 'Kembalikan ukuran panel' : 'Perbesar panel chat'}
+              >
+                {isExpanded ? '⤓' : '⤒'}
+              </button>
+            )}
+            {onClose && (
+              <button
+                type="button"
+                className="chat-pane-tool-btn chat-pane-close-btn"
+                onClick={onClose}
+                title="Tutup panel chat"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Thread History Slide-out Drawer */}
+        {isThreadsDrawerOpen && (
+          <div className="threads-drawer-dropdown" role="region" aria-label="Riwayat Percakapan">
+            <div className="threads-drawer-header">
+              <div className="threads-drawer-title-group">
+                <span className="threads-drawer-title">Riwayat Percakapan</span>
+                <span className="threads-drawer-subtitle">{threads.length} Obrolan Tersimpan</span>
+              </div>
+              <button
+                type="button"
+                className="threads-drawer-close"
+                onClick={() => setIsThreadsDrawerOpen(false)}
+                title="Tutup riwayat"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="threads-drawer-actions">
+              <button
+                type="button"
+                className="drawer-new-chat-btn"
+                onClick={handleCreateNewThread}
+              >
+                + Mulai Obrolan Baru
+              </button>
+            </div>
+
+            <div className="threads-list-scroll">
+              {threads.length === 0 ? (
+                <div className="threads-empty">Belum ada riwayat percakapan. Mulai chat baru untuk berkoordinasi dengan tim!</div>
+              ) : (
+                threads.map(t => {
+                  const isActive = t.id === activeThreadId;
+                  const dateStr = t.updatedAt || t.createdAt;
+                  const formattedTime = dateStr ? new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                  return (
+                    <div
+                      key={t.id}
+                      className={`thread-item-row ${isActive ? 'active' : ''}`}
+                      onClick={() => handleSelectThread(t.id)}
+                    >
+                      <div className="thread-item-icon">
+                        {t.planId ? '📋' : '💬'}
+                      </div>
+                      <div className="thread-item-info">
+                        <div className="thread-item-title">{t.title || 'Obrolan Tanpa Judul'}</div>
+                        <div className="thread-item-meta">
+                          <span>{t.messageCount || 0} pesan</span>
+                          {formattedTime && <span>• {formattedTime}</span>}
+                          {isActive && <span className="active-tag">Sedang Aktif</span>}
+                        </div>
+                      </div>
+                      <div className="thread-item-actions">
+                        <button
+                          type="button"
+                          className="thread-action-btn thread-delete-btn"
+                          onClick={(e) => handleDeleteThread(t.id, e)}
+                          title="Hapus obrolan ini"
+                        >
+                          <IconTrash />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Header Controls: Mode Selector Tabs, Model Selector & Reset */}
         <div className="chat-controls-bar">
           <div className="chat-mode-tabs" role="tablist" aria-label="Pilih Mode Chat">
@@ -627,6 +952,29 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
               ) : (
                 <span className="chat-model-error">None</span>
               )}
+            </div>
+
+            {/* Kanban Navigation Shortcut */}
+            {onOpenKanban && (
+              <button
+                type="button"
+                className="chat-kanban-nav-button"
+                onClick={() => onOpenKanban(activeThread?.planId || 'all')}
+                title="Buka Papan Kanban untuk melihat task tim"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="9" y1="3" x2="9" y2="21" />
+                  <line x1="15" y1="3" x2="15" y2="21" />
+                </svg>
+                <span>Papan Kanban</span>
+              </button>
+            )}
+
+            {/* Persistence Indicator */}
+            <div className="chat-persistence-pill" title="Obrolan & persetujuan rencana tersimpan aman di server & lokal">
+              <span className="persistence-dot" aria-hidden="true"></span>
+              <span className="persistence-label">Tersimpan</span>
             </div>
 
             {/* Reset Session Button */}
@@ -1061,18 +1409,41 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
 
                             <div className="confirmation-action-buttons">
                               {isApproved ? (
-                                <button type="button" className="confirm-btn confirm-btn-approved" disabled>
-                                  ✅ Rencana Disetujui ({approvalState?.count || message.approval?.count || message.plan?.tasks?.length || 0} Task di Kanban)
-                                </button>
+                                <>
+                                  <button type="button" className="confirm-btn confirm-btn-approved" disabled>
+                                    ✅ Rencana Disetujui ({approvalState?.count || message.approval?.count || message.plan?.tasks?.length || 0} Task di Kanban)
+                                  </button>
+                                  {onOpenKanban && (
+                                    <button
+                                      type="button"
+                                      className="confirm-btn confirm-btn-kanban"
+                                      onClick={() => onOpenKanban(message.plan?.id || message.approval?.planId || 'all')}
+                                    >
+                                      📋 Buka Papan Kanban Proyek Ini ➔
+                                    </button>
+                                  )}
+                                </>
                               ) : (
-                                <button
-                                  type="button"
-                                  className="confirm-btn confirm-btn-agree"
-                                  onClick={() => message.plan ? handleApprovePlan(message, message.plan) : handleQuickAction('Setuju, lanjutkan eksekusi.')}
-                                  disabled={loading || approvalState?.status === 'loading'}
-                                >
-                                  {approvalState?.status === 'loading' ? '⏳ Menyimpan...' : '✅ Setuju & Buat Task Kanban'}
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    className="confirm-btn confirm-btn-agree"
+                                    onClick={() => message.plan ? handleApprovePlan(message, message.plan) : handleQuickAction('Setuju, lanjutkan eksekusi.')}
+                                    disabled={loading || approvalState?.status === 'loading'}
+                                  >
+                                    {approvalState?.status === 'loading' ? '⏳ Menyimpan...' : '✅ Setuju & Buat Task Kanban'}
+                                  </button>
+                                  {onOpenKanban && (
+                                    <button
+                                      type="button"
+                                      className="confirm-btn confirm-btn-view-kanban"
+                                      onClick={() => onOpenKanban(message.plan?.id || message.approval?.planId || 'all')}
+                                      title="Lihat Papan Kanban untuk proyek ini"
+                                    >
+                                      📋 Papan Kanban Proyek
+                                    </button>
+                                  )}
+                                </>
                               )}
                               <button type="button" className="confirm-btn confirm-btn-revise"
                                 onClick={() => handleQuickAction('Saya ingin merevisi: ')} disabled={loading}>✏️ Revisi</button>
@@ -1316,22 +1687,46 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
 
                             <div className="confirmation-action-buttons">
                               {isApproved ? (
-                                <button
-                                  type="button"
-                                  className="confirm-btn confirm-btn-approved"
-                                  disabled
-                                >
-                                  ✅ Rencana Disetujui ({approvalState?.count || message.approval?.count || message.plan?.tasks?.length || 0} Task di Kanban)
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    className="confirm-btn confirm-btn-approved"
+                                    disabled
+                                  >
+                                    ✅ Rencana Disetujui ({approvalState?.count || message.approval?.count || message.plan?.tasks?.length || 0} Task di Kanban)
+                                  </button>
+                                  {onOpenKanban && (
+                                    <button
+                                      type="button"
+                                      className="confirm-btn confirm-btn-kanban"
+                                      onClick={() => onOpenKanban(message.plan?.id || message.approval?.planId || 'all')}
+                                      title="Buka Papan Kanban untuk melihat dan mengelola tugas tim"
+                                    >
+                                      📋 Buka Papan Kanban Proyek Ini ➔
+                                    </button>
+                                  )}
+                                </>
                               ) : (
-                                <button
-                                  type="button"
-                                  className="confirm-btn confirm-btn-agree"
-                                  onClick={() => message.plan ? handleApprovePlan(message, message.plan) : handleQuickAction('Setuju, rencana sudah sesuai. Silakan lanjutkan.')}
-                                  disabled={loading || approvalState?.status === 'loading'}
-                                >
-                                  {approvalState?.status === 'loading' ? '⏳ Menyimpan...' : '✅ Setuju & Buat Task Kanban'}
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    className="confirm-btn confirm-btn-agree"
+                                    onClick={() => message.plan ? handleApprovePlan(message, message.plan) : handleQuickAction('Setuju, rencana sudah sesuai. Silakan lanjutkan.')}
+                                    disabled={loading || approvalState?.status === 'loading'}
+                                  >
+                                    {approvalState?.status === 'loading' ? '⏳ Menyimpan...' : '✅ Setuju & Buat Task Kanban'}
+                                  </button>
+                                  {onOpenKanban && (
+                                    <button
+                                      type="button"
+                                      className="confirm-btn confirm-btn-view-kanban"
+                                      onClick={() => onOpenKanban(message.plan?.id || message.approval?.planId || 'all')}
+                                      title="Lihat status Papan Kanban saat ini"
+                                    >
+                                      📋 Papan Kanban Proyek
+                                    </button>
+                                  )}
+                                </>
                               )}
                               <button
                                 type="button"

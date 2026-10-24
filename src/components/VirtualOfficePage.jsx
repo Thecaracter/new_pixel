@@ -3,18 +3,23 @@ import { OfficeHeader } from './OfficeHeader';
 import { OfficeCanvas } from './three/OfficeCanvas';
 import { ChatPanel } from './ChatPanel';
 import { TeamSettingsPage } from './TeamSettingsPage';
+import { KanbanBoard } from './KanbanBoard';
 
 /**
  * Virtual Office page shell
  * Supports seamless switching between:
  * 1. 3D Virtual Office & Chat Coordination
- * 2. Dedicated Team & Agent Settings (Roster, Status, Model per Agent)
+ * 2. Interactive Kanban Board (Plan & Task Tracking)
+ * 3. Dedicated Team & Agent Settings (Roster, Status, Model per Agent)
  */
 export function VirtualOfficePage() {
   const stageRef = useRef(null);
-  const [activeTab, setActiveTab] = useState('office'); // 'office' | 'settings'
+  const [activeTab, setActiveTab] = useState('office'); // 'office' | 'kanban' | 'settings'
   const [teamMembers, setTeamMembers] = useState([]);
   const [availableModels, setAvailableModels] = useState([]);
+  const [kanbanTaskCount, setKanbanTaskCount] = useState(0);
+
+  const [selectedKanbanProject, setSelectedKanbanProject] = useState('all');
 
   // Fetch team roster from backend
   const fetchTeam = useCallback(async () => {
@@ -52,12 +57,34 @@ export function VirtualOfficePage() {
     }
   }, []);
 
+  // Fetch Kanban task count
+  const fetchKanbanCount = useCallback(async () => {
+    try {
+      const response = await fetch('/api/kanban/tasks');
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.tasks)) {
+          setKanbanTaskCount(data.tasks.length);
+        }
+      }
+    } catch (_) {}
+  }, []);
+
   useEffect(() => {
     fetchTeam();
     fetchModels();
-  }, [fetchTeam, fetchModels]);
+    fetchKanbanCount();
+  }, [fetchTeam, fetchModels, fetchKanbanCount]);
 
   const activeMemberCount = teamMembers.filter(m => m.active !== false).length;
+
+  const handleOpenKanbanProject = (projectId) => {
+    if (projectId) {
+      setSelectedKanbanProject(projectId);
+    }
+    fetchKanbanCount();
+    setActiveTab('kanban');
+  };
 
   return (
     <div className="virtual-office-root">
@@ -65,6 +92,7 @@ export function VirtualOfficePage() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         activeMemberCount={activeMemberCount || 7}
+        kanbanTaskCount={kanbanTaskCount}
       />
 
       {activeTab === 'office' ? (
@@ -75,8 +103,18 @@ export function VirtualOfficePage() {
           <ChatPanel
             externalTeamMembers={teamMembers}
             onRefreshTeam={fetchTeam}
+            onOpenKanban={handleOpenKanbanProject}
           />
         </>
+      ) : activeTab === 'kanban' ? (
+        <main className="kanban-stage">
+          <KanbanBoard
+            teamMembers={teamMembers}
+            selectedProjectId={selectedKanbanProject}
+            onSelectProjectId={setSelectedKanbanProject}
+            onNavigateToChat={() => setActiveTab('office')}
+          />
+        </main>
       ) : (
         <main className="settings-stage">
           <TeamSettingsPage
@@ -91,3 +129,4 @@ export function VirtualOfficePage() {
 }
 
 export default VirtualOfficePage;
+

@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
  * - Non-AI-slop bespoke segmented tabs with clean SVG icons
  * - Cohesive brand identity with logo badge
  */
-export function OfficeHeader({ activeTab = 'office', onSelectTab, activeMemberCount = 7 }) {
+export function OfficeHeader({ activeTab = 'office', onSelectTab, activeMemberCount = 7, kanbanTaskCount = 0 }) {
   // Real dynamic date and time updated every second
   const [currentDate, setCurrentDate] = useState(() => new Date());
 
@@ -87,6 +87,28 @@ export function OfficeHeader({ activeTab = 'office', onSelectTab, activeMemberCo
             </svg>
           </span>
           <span className="nav-tab-label">Virtual Office & Chat</span>
+        </button>
+
+        <button
+          type="button"
+          className={`nav-tab-btn ${activeTab === 'kanban' ? 'active' : ''}`}
+          onClick={() => onSelectTab && onSelectTab('kanban')}
+          aria-current={activeTab === 'kanban' ? 'page' : undefined}
+        >
+          <span className="nav-tab-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="9" y1="3" x2="9" y2="21" />
+              <line x1="15" y1="3" x2="15" y2="21" />
+            </svg>
+          </span>
+          <span className="nav-tab-label">Papan Kanban</span>
+          {kanbanTaskCount > 0 && (
+            <span className="nav-tab-count kanban-count" title={`${kanbanTaskCount} task di Kanban`}>
+              <span className="count-dot kanban-dot" aria-hidden="true"></span>
+              {kanbanTaskCount} Task
+            </span>
+          )}
         </button>
 
         <button

@@ -4,7 +4,7 @@
     "name": "Arif",
     "role": "Project Lead / Coordinator",
     "description": "Memimpin koordinasi sprint, requirement elicitation, breakdown tugas, dan delegasi ke anggota tim.",
-    "active": false,
+    "active": true,
     "model": null,
     "shirtColor": "#4a5fc1",
     "hairColor": "#2a2236",
@@ -89,31 +89,5 @@
     "skinColor": "#c68f64",
     "pantsColor": "#3b4468",
     "isDefault": true
-  },
-  {
-    "id": "farhan",
-    "name": "Farhan",
-    "role": "DevOps Engineer",
-    "description": "Setup CI/CD and deployment",
-    "active": true,
-    "model": "opencode/big-pickle",
-    "shirtColor": "#38bdf8",
-    "hairColor": "#1e293b",
-    "skinColor": "#f2c9a0",
-    "pantsColor": "#334155",
-    "isDefault": false
-  },
-  {
-    "id": "farhan_1",
-    "name": "Farhan",
-    "role": "DevOps Engineer",
-    "description": "Setup CI/CD and deployment",
-    "active": false,
-    "model": "opencode/big-pickle",
-    "shirtColor": "#38bdf8",
-    "hairColor": "#1e293b",
-    "skinColor": "#f2c9a0",
-    "pantsColor": "#334155",
-    "isDefault": false
   }
 ]

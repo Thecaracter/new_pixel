@@ -17,10 +17,22 @@ import {
   clearChatHistory,
   clearChatHistorySafe,
   setChatSessionId,
+  getChatThreads,
+  getChatThread,
+  createChatThread,
+  setActiveChatThread,
+  deleteChatThread,
+  updateChatThread,
   getKanbanTasks,
   loadKanbanStore,
+  getKanbanProjects,
+  createKanbanProject,
+  deleteKanbanProject,
   approvePlan,
   approvePlanSafe,
+  updateKanbanTaskSafe,
+  deleteKanbanTaskSafe,
+  createKanbanTaskSafe,
   STORAGE_LIMITS
 } from './storage.js';
 
@@ -410,7 +422,7 @@ app.get('/api/models', (req, res) => {
  * } or { error: string, details: string }
  */
 app.post('/api/chat', async (req, res) => {
-  const { message, sessionId, model, mode, leader } = req.body;
+  const { message, sessionId, model, mode, leader, threadId } = req.body;
 
   // Validate input
   if (!message || typeof message !== 'string' || !message.trim()) {
@@ -474,7 +486,80 @@ app.post('/api/chat', async (req, res) => {
     type: 'user',
     mode: effectiveMode,
     text: trimmedMessage
-  }, nextSessionId || undefined);
+  }, nextSessionId || undefined, threadId || null);
+
+  // Check if user is approving an existing pending plan in leader mode
+  if (isLeaderMode) {
+    const isAgreement = /^(setuju|oke\s+setuju|ok\s+setuju|setuju\s+lanjutkan|setuju\s+rencana|deal|sepakat|approve|lanjutkan|yes\s+setuju|lanjut\s+eksekusi)[\s.!,]*$/i.test(trimmedMessage);
+    if (isAgreement) {
+      const chatStore = loadChatStore();
+      const targetThread = threadId ? chatStore.leader?.threads?.find(t => t.id === threadId) : null;
+      const leaderMsgs = targetThread?.messages?.length ? targetThread.messages : (chatStore.leader?.messages || []);
+      const pendingPlanMsg = [...leaderMsgs].reverse().find(
+        m => m.type === 'assistant' && m.plan && (!m.approval || m.approval.status !== 'approved')
+      );
+
+      if (pendingPlanMsg && pendingPlanMsg.plan) {
+        try {
+          const approvalResult = await approvePlanSafe({
+            plan: pendingPlanMsg.plan,
+            planId: pendingPlanMsg.plan.id,
+            idempotencyKey: pendingPlanMsg.plan.id,
+            teamMembers: TEAM_MEMBERS
+          });
+
+          const approvalRecord = {
+            status: 'approved',
+            alreadyApproved: approvalResult.alreadyApproved,
+            approvedAt: new Date().toISOString(),
+            planId: approvalResult.planId,
+            count: approvalResult.count,
+            taskIds: approvalResult.tasks.map(t => t.id)
+          };
+
+          if (pendingPlanMsg.id) {
+            await updateChatMessageSafe('leader', pendingPlanMsg.id, {
+              approval: approvalRecord
+            });
+          }
+
+          const replyText = `Terima kasih, konfirmasi sudah saya terima! Rencana "${pendingPlanMsg.plan.title || 'Proyek'}" telah disetujui dan ${approvalResult.count} tugas resmi dimasukkan ke Papan Kanban (Backlog/Pending). Anggota tim yang ditugaskan dapat langsung mulai mengerjakannya.`;
+
+          const savedAssistantMsg = await saveChatMessageSafe('leader', {
+            type: 'assistant',
+            mode: 'leader',
+            text: replyText,
+            reply: replyText,
+            phase: 'approved',
+            plan: pendingPlanMsg.plan,
+            approval: approvalRecord,
+            confirmation_prompt: null,
+            valid: true,
+            kanbanCreated: true,
+            tasks: approvalResult.tasks,
+            model: selectedModel || currentModel || null
+          }, nextSessionId || null, threadId || null);
+
+          return res.json({
+            id: savedAssistantMsg.id,
+            reply: replyText,
+            sessionId: nextSessionId || null,
+            model: selectedModel || currentModel || null,
+            mode: 'leader',
+            phase: 'approved',
+            plan: pendingPlanMsg.plan,
+            approval: approvalRecord,
+            tasks: approvalResult.tasks,
+            kanbanCreated: true,
+            valid: true,
+            roster: TEAM_MEMBERS
+          });
+        } catch (approvalErr) {
+          console.error('Auto-approval error on setuju:', approvalErr);
+        }
+      }
+    }
+  }
 
   try {
     // Build opencode command with JSON format for structured output
@@ -526,16 +611,17 @@ app.post('/api/chat', async (req, res) => {
 
     if (!isLeaderMode) {
       // Standard chat response - 100% backward-compatible with legacy clients
-      await saveChatMessageSafe('chat', {
+      const savedChatMsg = await saveChatMessageSafe('chat', {
         type: 'assistant',
         mode: 'chat',
         text: rawOutput,
         reply: rawOutput,
         phase: 'chat',
         model: selectedModel || currentModel || null
-      }, nextSessionId || null);
+      }, nextSessionId || null, threadId || null);
 
       return res.json({
+        id: savedChatMsg.id,
         reply: rawOutput,
         sessionId: nextSessionId || null,
         model: selectedModel || currentModel || null,
@@ -552,7 +638,7 @@ app.post('/api/chat', async (req, res) => {
       normalized.plan.id = `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     }
 
-    await saveChatMessageSafe('leader', {
+    const savedLeaderMsg = await saveChatMessageSafe('leader', {
       type: 'assistant',
       mode: 'leader',
       text: normalized.summary,
@@ -563,9 +649,10 @@ app.post('/api/chat', async (req, res) => {
       confirmation_prompt: normalized.confirmation_prompt,
       valid: normalized.valid,
       model: selectedModel || currentModel || null
-    }, nextSessionId || null);
+    }, nextSessionId || null, threadId || null);
 
     const leaderResponse = {
+      id: savedLeaderMsg.id,
       reply: normalized.summary,
       sessionId: nextSessionId || null,
       model: selectedModel || currentModel || null,
@@ -718,7 +805,7 @@ app.post('/api/orchestrate', async (req, res) => {
     }
 
     // Persist assistant response to orchestrator history
-    await saveChatMessageSafe('orchestrator', {
+    const savedOrchMsg = await saveChatMessageSafe('orchestrator', {
       type: 'assistant',
       mode: 'orchestrator',
       text: result.summary,
@@ -736,6 +823,7 @@ app.post('/api/orchestrate', async (req, res) => {
 
     return res.json({
       ...result,
+      id: savedOrchMsg.id,
       reply: result.summary,
       model: selectedModel || null,
       mode: 'orchestrator',
@@ -912,15 +1000,190 @@ app.post('/api/kanban/approve-plan', handleApprovePlan);
 
 /**
  * GET /api/kanban/tasks
- * Returns Kanban tasks, columns, and approved plans
+ * Returns Kanban tasks (optionally filtered by projectId), columns, approved plans, and projects
  */
 app.get('/api/kanban/tasks', (req, res) => {
+  const { projectId, planId } = req.query;
+  const targetProject = projectId || planId || null;
   const store = loadKanbanStore();
+  const tasks = targetProject && targetProject !== 'all'
+    ? store.tasks.filter(t => t.planId === targetProject || t.projectId === targetProject)
+    : store.tasks;
   res.json({
-    tasks: store.tasks,
+    tasks,
     columns: store.columns,
-    approvedPlans: store.approvedPlans
+    approvedPlans: store.approvedPlans,
+    projects: getKanbanProjects()
   });
+});
+
+/**
+ * PATCH /api/kanban/tasks/:id
+ * Update task status, column, assignee, or details
+ */
+app.patch('/api/kanban/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const updated = await updateKanbanTaskSafe(id, req.body);
+    res.json({ success: true, task: updated });
+  } catch (err) {
+    res.status(err.message.includes('not found') ? 404 : 400).json({
+      error: 'Failed to update task',
+      details: err.message
+    });
+  }
+});
+
+app.put('/api/kanban/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const updated = await updateKanbanTaskSafe(id, req.body);
+    res.json({ success: true, task: updated });
+  } catch (err) {
+    res.status(err.message.includes('not found') ? 404 : 400).json({
+      error: 'Failed to update task',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/kanban/tasks/:id
+ * Remove task from Kanban
+ */
+app.delete('/api/kanban/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deleted = await deleteKanbanTaskSafe(id);
+    res.json({ success: true, task: deleted });
+  } catch (err) {
+    res.status(err.message.includes('not found') ? 404 : 400).json({
+      error: 'Failed to delete task',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * POST /api/kanban/tasks
+ * Create manual task in Kanban
+ */
+app.post('/api/kanban/tasks', async (req, res) => {
+  try {
+    const created = await createKanbanTaskSafe(req.body);
+    res.status(201).json({ success: true, task: created });
+  } catch (err) {
+    res.status(400).json({
+      error: 'Failed to create task',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * POST /api/chat/save
+ * Explicit chat message persistence/sync endpoint
+ */
+app.post('/api/chat/save', async (req, res) => {
+  const { mode = 'leader', message, sessionId, threadId } = req.body;
+  if (!message || typeof message !== 'object') {
+    return res.status(400).json({ error: 'message object is required' });
+  }
+  try {
+    const saved = await saveChatMessageSafe(mode, message, sessionId, threadId);
+    res.status(201).json({ success: true, message: saved });
+  } catch (err) {
+    res.status(400).json({ error: 'Failed to save message', details: err.message });
+  }
+});
+
+/**
+ * Kanban Projects Management API
+ */
+app.get('/api/kanban/projects', (req, res) => {
+  res.json({ projects: getKanbanProjects() });
+});
+
+app.post('/api/kanban/projects', (req, res) => {
+  try {
+    const project = createKanbanProject(req.body);
+    res.status(201).json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: 'Failed to create project', details: err.message });
+  }
+});
+
+app.delete('/api/kanban/projects/:id', (req, res) => {
+  try {
+    const result = deleteKanbanProject(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: 'Failed to delete project', details: err.message });
+  }
+});
+
+/**
+ * Multi-Thread Chat Management API
+ */
+app.get('/api/chat/threads', (req, res) => {
+  const { mode = 'leader' } = req.query;
+  try {
+    const data = getChatThreads(mode);
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ error: 'Failed to get threads', details: err.message });
+  }
+});
+
+app.post('/api/chat/threads', (req, res) => {
+  const { mode = 'leader', title, planId, projectName } = req.body;
+  try {
+    const thread = createChatThread(mode, { title, planId, projectName });
+    res.status(201).json({ success: true, thread });
+  } catch (err) {
+    res.status(400).json({ error: 'Failed to create thread', details: err.message });
+  }
+});
+
+app.get('/api/chat/threads/:id', (req, res) => {
+  const { mode = 'leader' } = req.query;
+  try {
+    const thread = getChatThread(mode, req.params.id);
+    if (!thread) return res.status(404).json({ error: 'Thread not found' });
+    res.json({ thread });
+  } catch (err) {
+    res.status(400).json({ error: 'Failed to get thread', details: err.message });
+  }
+});
+
+app.put('/api/chat/threads/:id/active', (req, res) => {
+  const { mode = 'leader' } = req.body;
+  try {
+    const thread = setActiveChatThread(mode, req.params.id);
+    res.json({ success: true, thread });
+  } catch (err) {
+    res.status(400).json({ error: 'Failed to set active thread', details: err.message });
+  }
+});
+
+app.delete('/api/chat/threads/:id', (req, res) => {
+  const { mode = 'leader' } = req.query;
+  try {
+    const deleted = deleteChatThread(mode, req.params.id);
+    res.json({ success: true, thread: deleted });
+  } catch (err) {
+    res.status(400).json({ error: 'Failed to delete thread', details: err.message });
+  }
+});
+
+app.patch('/api/chat/threads/:id', (req, res) => {
+  const { mode = 'leader', title, planId, projectName } = req.body;
+  try {
+    const updated = updateChatThread(mode, req.params.id, { title, planId, projectName });
+    res.json({ success: true, thread: updated });
+  } catch (err) {
+    res.status(400).json({ error: 'Failed to update thread', details: err.message });
+  }
 });
 
 /**
@@ -961,6 +1224,10 @@ app.get('/api/health', (req, res) => {
 
 // GET /api/team — List all team members
 app.get('/api/team', (req, res) => {
+  try {
+    const diskMembers = loadTeamMembersFromDisk();
+    TEAM_MEMBERS.splice(0, TEAM_MEMBERS.length, ...diskMembers);
+  } catch (_) {}
   const { active } = req.query;
   if (active === 'true') {
     return res.json({ members: TEAM_MEMBERS.filter(m => m.active !== false) });
@@ -1132,5 +1399,8 @@ export {
   setChatSessionId,
   getKanbanTasks,
   loadKanbanStore,
-  approvePlan
+  approvePlan,
+  updateKanbanTaskSafe,
+  deleteKanbanTaskSafe,
+  createKanbanTaskSafe
 };
