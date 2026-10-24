@@ -36,6 +36,7 @@ Thumbs.db
 .cache/
 *.tmp
 *.temp
+.tmp_*
 .vite/
 
 # Test coverage

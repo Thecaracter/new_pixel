@@ -10,13 +10,21 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test tests/leader-contract.mjs tests/team-management.mjs tests/api-chat-contract.mjs tests/durable-chat-kanban.mjs",
-    "test:unit": "node --test tests/leader-contract.mjs tests/team-management.mjs",
+    "test:unit": "node --test tests/leader-contract.mjs tests/team-management.mjs tests/thread-and-project-kanban.mjs",
     "test:integration": "node --test tests/api-chat-contract.mjs tests/durable-chat-kanban.mjs",
     "type-check": "echo 'No TypeScript configured'"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "virtual-office",
+    "threejs",
+    "react-three-fiber",
+    "ai-agents",
+    "mcp",
+    "kanban",
+    "orchestrator",
+    "opencode"
+  ],
+  "license": "MIT",
   "dependencies": {
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
