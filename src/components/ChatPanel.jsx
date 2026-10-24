@@ -1,5 +1,97 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+// Clean, high-craft SVG icons replacing AI-slop emojis
+function IconCoordinator() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <polyline points="16 11 18 13 22 9" />
+    </svg>
+  );
+}
+
+function IconMessage() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function IconNodes() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="9" y="2" width="6" height="6" rx="1.5" />
+      <rect x="2" y="16" width="6" height="6" rx="1.5" />
+      <rect x="16" y="16" width="6" height="6" rx="1.5" />
+      <path d="M5 16v-4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+    </svg>
+  );
+}
+
+function IconCpu() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <rect x="9" y="9" width="6" height="6" />
+      <line x1="9" y1="1" x2="9" y2="4" />
+      <line x1="15" y1="1" x2="15" y2="4" />
+      <line x1="9" y1="20" x2="9" y2="23" />
+      <line x1="15" y1="20" x2="15" y2="23" />
+      <line x1="20" y1="9" x2="23" y2="9" />
+      <line x1="20" y1="14" x2="23" y2="14" />
+      <line x1="1" y1="9" x2="4" y2="9" />
+      <line x1="1" y1="14" x2="4" y2="14" />
+    </svg>
+  );
+}
+
+function IconRefresh() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="23 4 23 10 17 10" />
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    </svg>
+  );
+}
+
+function IconSend() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="12" y1="19" x2="12" y2="5" />
+      <polyline points="5 12 12 5 19 12" />
+    </svg>
+  );
+}
+
+function IconCheck() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function IconEdit() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </svg>
+  );
+}
+
+function IconArrowRight() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </svg>
+  );
+}
+
 /**
  * Team members roster fallback for Pixel Works Virtual Office
  */
@@ -348,7 +440,7 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
               onClick={() => setMode('leader')}
               disabled={loading}
             >
-              <span className="mode-tab-icon" aria-hidden="true">🧑‍💼</span>
+              <span className="mode-tab-icon" aria-hidden="true"><IconCoordinator /></span>
               <span className="mode-tab-title">Leader Mode</span>
               <span className="mode-tab-badge">Arif</span>
             </button>
@@ -362,7 +454,7 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
               onClick={() => setMode('chat')}
               disabled={loading}
             >
-              <span className="mode-tab-icon" aria-hidden="true">💬</span>
+              <span className="mode-tab-icon" aria-hidden="true"><IconMessage /></span>
               <span className="mode-tab-title">Chat Biasa</span>
             </button>
             <button
@@ -375,7 +467,7 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
               onClick={() => setMode('orchestrator')}
               disabled={loading}
             >
-              <span className="mode-tab-icon" aria-hidden="true">🤖</span>
+              <span className="mode-tab-icon" aria-hidden="true"><IconNodes /></span>
               <span className="mode-tab-title">Multi-Agent</span>
               <span className="mode-tab-badge">MCP</span>
             </button>
@@ -385,7 +477,8 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
             {/* Model Selector */}
             <div className="chat-model-selector-inline">
               <label htmlFor="model-select" className="chat-model-label">
-                Model:
+                <span className="model-label-icon" aria-hidden="true"><IconCpu /></span>
+                <span>Model:</span>
               </label>
               {modelsLoading ? (
                 <span className="chat-model-loading">Loading...</span>
@@ -422,7 +515,8 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
               title={`Mulai sesi baru untuk ${mode === 'leader' ? 'Leader Mode' : mode === 'orchestrator' ? 'Multi-Agent' : 'Chat Biasa'}`}
               aria-label="Mulai sesi baru"
             >
-              🔄 Sesi Baru
+              <IconRefresh />
+              <span>Sesi Baru</span>
             </button>
           </div>
         </div>
@@ -431,20 +525,23 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
         <div className="chat-mode-banner">
           {mode === 'leader' ? (
             <div className="banner-leader">
-              <span>
-                <strong>🧑‍💼 Arif (Project Lead):</strong> Mengoordinasikan tim, mengklarifikasi kebutuhan, membagi tugas ke anggota roster, dan meminta konfirmasi sebelum eksekusi.
+              <span className="banner-mode-pill">Arif • Project Lead</span>
+              <span className="banner-text">
+                Mengoordinasikan tim, mengklarifikasi kebutuhan, membagi tugas ke anggota roster, dan meminta konfirmasi sebelum eksekusi.
               </span>
             </div>
           ) : mode === 'orchestrator' ? (
             <div className="banner-leader">
-              <span>
-                <strong>🤖 Multi-Agent (MCP):</strong> Arif mendelegasikan tugas ke agent spesialis. Setiap agent punya keahlian dan tools sendiri, bisa diskusi satu sama lain.
+              <span className="banner-mode-pill">Multi-Agent • MCP</span>
+              <span className="banner-text">
+                Arif mendelegasikan tugas ke agent spesialis. Setiap agent memiliki keahlian tools sendiri dan dapat saling berdiskusi.
               </span>
             </div>
           ) : (
             <div className="banner-standard">
-              <span>
-                <strong>💬 OpenCode Chat:</strong> Percakapan umum langsung tanpa persona koordinasi Arif dan tanpa struktur tugas.
+              <span className="banner-mode-pill">Direct Chat</span>
+              <span className="banner-text">
+                Percakapan umum langsung tanpa persona koordinasi Arif dan tanpa struktur tugas.
               </span>
             </div>
           )}
@@ -460,7 +557,9 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
         >
           {isEmpty && mode === 'leader' && (
             <div className="chat-empty-state leader-empty-state">
-              <div className="empty-state-avatar" aria-hidden="true">🧑‍💼</div>
+              <div className="empty-state-icon-badge" aria-hidden="true">
+                <IconCoordinator />
+              </div>
               <h3 className="empty-state-title">Koordinasi Tim Bersama Arif</h3>
               <p className="empty-state-subtitle">
                 Instruksikan kebutuhan proyek atau penugasan anggota tim. Arif akan memvalidasi roster dan menyusun rencana tugas.
@@ -494,21 +593,24 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                     className="suggestion-chip"
                     onClick={() => handleQuickAction('Arif, tugaskan Sinta untuk membuat campaign login')}
                   >
-                    🚀 Arif, tugaskan Sinta untuk membuat campaign login
+                    <span className="suggestion-arrow"><IconArrowRight /></span>
+                    <span>Tugaskan Sinta untuk membuat campaign peluncuran</span>
                   </button>
                   <button
                     type="button"
                     className="suggestion-chip"
                     onClick={() => handleQuickAction('Arif, buatkan rencana sprint redesign UI bersama Dimas dan Bayu')}
                   >
-                    🎨 Rencana sprint redesign UI bersama Dimas dan Bayu
+                    <span className="suggestion-arrow"><IconArrowRight /></span>
+                    <span>Rencana sprint redesign antarmuka bersama Dimas dan Bayu</span>
                   </button>
                   <button
                     type="button"
                     className="suggestion-chip"
                     onClick={() => handleQuickAction('Arif, koordinasikan estimasi budget peluncuran produk dengan Rina')}
                   >
-                    💰 Estimasi budget peluncuran dengan Rina
+                    <span className="suggestion-arrow"><IconArrowRight /></span>
+                    <span>Koordinasikan estimasi budget peluncuran produk dengan Rina</span>
                   </button>
                 </div>
               </div>
@@ -517,17 +619,22 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
 
           {isEmpty && mode === 'chat' && (
             <div className="chat-empty-state standard-empty-state">
-              <div className="empty-state-icon" aria-hidden="true">💬</div>
-              <p>Mulai percakapan santai dengan OpenCode...</p>
+              <div className="empty-state-icon-badge" aria-hidden="true">
+                <IconMessage />
+              </div>
+              <h3 className="empty-state-title">Chat Langsung OpenCode</h3>
+              <p>Mulai percakapan langsung dengan model AI untuk bantuan kode atau tanya jawab umum.</p>
             </div>
           )}
 
           {isEmpty && mode === 'orchestrator' && (
             <div className="chat-empty-state leader-empty-state">
-              <div className="empty-state-avatar" aria-hidden="true">🤖</div>
+              <div className="empty-state-icon-badge" aria-hidden="true">
+                <IconNodes />
+              </div>
               <h3 className="empty-state-title">Multi-Agent Orchestration</h3>
               <p className="empty-state-subtitle">
-                Berikan perintah dan Arif akan mendelegasikan ke agent spesialis. Mereka akan bekerja, berdiskusi, dan mengembalikan hasil.
+                Berikan instruksi kompleks dan Arif akan mendelegasikan tugas ke agen spesialis. Mereka akan berkolaborasi untuk menyelesaikannya.
               </p>
               <div className="leader-suggestions-box">
                 <span className="suggestions-title">Contoh Perintah:</span>
@@ -535,17 +642,20 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                   <button type="button" className="suggestion-chip"
                     onClick={() => handleQuickAction('Buatkan rencana peluncuran produk baru termasuk budget, desain landing page, dan strategi marketing')}
                   >
-                    🚀 Rencana peluncuran produk (budget + desain + marketing)
+                    <span className="suggestion-arrow"><IconArrowRight /></span>
+                    <span>Rencana peluncuran produk (budget + desain + marketing)</span>
                   </button>
                   <button type="button" className="suggestion-chip"
                     onClick={() => handleQuickAction('Siapkan pitch deck untuk klien baru di industri fintech, termasuk riset klien dan estimasi harga')}
                   >
-                    🤝 Pitch deck + riset klien fintech
+                    <span className="suggestion-arrow"><IconArrowRight /></span>
+                    <span>Pitch deck & riset penawaran klien fintech</span>
                   </button>
                   <button type="button" className="suggestion-chip"
                     onClick={() => handleQuickAction('Buat timeline sprint 2 minggu untuk redesign halaman dashboard, libatkan Dimas dan Bayu')}
                   >
-                    📋 Timeline sprint redesign dashboard
+                    <span className="suggestion-arrow"><IconArrowRight /></span>
+                    <span>Timeline sprint redesign dashboard bersama Dimas dan Bayu</span>
                   </button>
                 </div>
               </div>
@@ -590,15 +700,15 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                       {/* Orchestrator Header */}
                       <div className="leader-card-header">
                         <div className="leader-identity">
-                          <span className="leader-icon" aria-hidden="true">🤖</span>
+                          <span className="leader-icon" aria-hidden="true"><IconNodes /></span>
                           <span className="leader-name">Multi-Agent</span>
                           <span className="leader-role-tag">MCP Orchestrator</span>
                         </div>
                         {message.phase && (
                           <span className={`leader-phase-pill phase-${message.phase}`}>
-                            {message.phase === 'clarifying' && '🔍 Klarifikasi'}
-                            {message.phase === 'awaiting_confirmation' && '⏳ Menunggu Konfirmasi'}
-                            {message.phase === 'planned' && '📋 Rencana Selesai'}
+                            {message.phase === 'clarifying' && 'Klarifikasi'}
+                            {message.phase === 'awaiting_confirmation' && 'Menunggu Konfirmasi'}
+                            {message.phase === 'planned' && 'Rencana Selesai'}
                           </span>
                         )}
                       </div>
@@ -610,13 +720,11 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                       {Array.isArray(message.delegations) && message.delegations.length > 0 && (
                         <div className="orchestrator-delegations">
                           <div className="panel-heading">
-                            <span aria-hidden="true">📤</span>
                             <strong>Delegasi ke Agent:</strong>
                           </div>
                           <div className="delegation-chips">
                             {message.delegations.map((d, dIdx) => (
                               <span key={dIdx} className="delegation-chip">
-                                <span className="delegation-emoji">{d.agentEmoji || '🤖'}</span>
                                 <span className="delegation-name">{d.agentName || d.agent_id}</span>
                                 <span className="delegation-task">{d.task}</span>
                               </span>
@@ -629,13 +737,11 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                       {Array.isArray(message.agentResults) && message.agentResults.length > 0 && (
                         <div className="orchestrator-results">
                           <div className="panel-heading">
-                            <span aria-hidden="true">📥</span>
                             <strong>Hasil Kerja Agent:</strong>
                           </div>
                           {message.agentResults.map((r, rIdx) => (
                             <div key={rIdx} className={`agent-result-card ${r.error ? 'agent-result-error' : ''}`}>
                               <div className="agent-result-header">
-                                <span className="agent-result-emoji">{r.agentEmoji || '🤖'}</span>
                                 <strong>{r.agentName}</strong>
                                 <span className="agent-result-role">{r.agentRole}</span>
                                 {r.confidence && (
@@ -644,15 +750,15 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                                   </span>
                                 )}
                                 {r.isDiscussionReply && (
-                                  <span className="agent-discussion-tag">💬 diskusi</span>
+                                  <span className="agent-discussion-tag">diskusi</span>
                                 )}
                               </div>
                               <div className="agent-result-body">
-                                {r.error ? `❌ ${r.error}` : r.summary}
+                                {r.error ? r.error : r.summary}
                               </div>
                               {r.toolResults && r.toolResults.length > 0 && (
                                 <div className="agent-tools-used">
-                                  🔧 Tools: {r.toolResults.map(t => t.tool).join(', ')}
+                                  Tools: {r.toolResults.map(t => t.tool).join(', ')}
                                 </div>
                               )}
                             </div>
@@ -664,7 +770,6 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                       {Array.isArray(message.discussions) && message.discussions.length > 0 && (
                         <div className="orchestrator-discussions">
                           <div className="panel-heading">
-                            <span aria-hidden="true">💬</span>
                             <strong>Diskusi Antar Agent:</strong>
                           </div>
                           {message.discussions.map((d, dIdx) => (
@@ -778,15 +883,20 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                       {message.confirmation_prompt && (
                         <div className="leader-confirmation-panel">
                           <div className="confirmation-header-line">
-                            <span aria-hidden="true">⚠️</span>
-                            <strong>Persetujuan:</strong>
+                            <strong>Persetujuan Rencana:</strong>
                           </div>
                           <p className="confirmation-body-text">{message.confirmation_prompt}</p>
                           <div className="confirmation-action-buttons">
                             <button type="button" className="confirm-btn confirm-btn-agree"
-                              onClick={() => handleQuickAction('Setuju, lanjutkan eksekusi.')}>✅ Setuju</button>
+                              onClick={() => handleQuickAction('Setuju, lanjutkan eksekusi.')}>
+                              <IconCheck />
+                              <span>Setuju & Lanjutkan</span>
+                            </button>
                             <button type="button" className="confirm-btn confirm-btn-revise"
-                              onClick={() => handleQuickAction('Saya ingin merevisi: ')}>✏️ Revisi</button>
+                              onClick={() => handleQuickAction('Saya ingin merevisi: ')}>
+                              <IconEdit />
+                              <span>Beri Catatan Revisi</span>
+                            </button>
                           </div>
                         </div>
                       )}
@@ -796,16 +906,16 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                       {/* Persona Header & Phase Badge */}
                       <div className="leader-card-header">
                         <div className="leader-identity">
-                          <span className="leader-icon" aria-hidden="true">🧑‍💼</span>
+                          <span className="leader-icon" aria-hidden="true"><IconCoordinator /></span>
                           <span className="leader-name">Arif</span>
                           <span className="leader-role-tag">Project Lead</span>
                         </div>
 
                         {message.phase && (
                           <span className={`leader-phase-pill phase-${message.phase}`}>
-                            {message.phase === 'clarifying' && '🔍 Klarifikasi Kebutuhan'}
-                            {message.phase === 'awaiting_confirmation' && '⏳ Menunggu Konfirmasi'}
-                            {message.phase === 'planned' && '📋 Rencana Disusun'}
+                            {message.phase === 'clarifying' && 'Klarifikasi Kebutuhan'}
+                            {message.phase === 'awaiting_confirmation' && 'Menunggu Konfirmasi'}
+                            {message.phase === 'planned' && 'Rencana Disusun'}
                           </span>
                         )}
                       </div>
@@ -971,7 +1081,6 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                       {message.confirmation_prompt && (
                         <div className="leader-confirmation-panel">
                           <div className="confirmation-header-line">
-                            <span aria-hidden="true">⚠️</span>
                             <strong>Persetujuan Sebelum Eksekusi:</strong>
                           </div>
                           <p className="confirmation-body-text">{message.confirmation_prompt}</p>
@@ -981,14 +1090,16 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
                               className="confirm-btn confirm-btn-agree"
                               onClick={() => handleQuickAction('Setuju, rencana sudah sesuai. Silakan lanjutkan.')}
                             >
-                              ✅ Setuju & Lanjutkan
+                              <IconCheck />
+                              <span>Setuju & Lanjutkan</span>
                             </button>
                             <button
                               type="button"
                               className="confirm-btn confirm-btn-revise"
                               onClick={() => handleQuickAction('Saya ingin merevisi rencana ini: ')}
                             >
-                              ✏️ Beri Catatan Revisi
+                              <IconEdit />
+                              <span>Beri Catatan Revisi</span>
                             </button>
                           </div>
                         </div>
@@ -1006,7 +1117,7 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
             <div className="chat-message chat-message-loading" role="status" aria-label="Loading response">
               <div className="chat-message-content">
                 <span className="chat-loading-spinner"></span>
-                <span>{mode === 'leader' ? 'Arif sedang mengoordinasikan tim...' : mode === 'orchestrator' ? '🤖 Agent sedang bekerja dan berdiskusi...' : 'is thinking...'}</span>
+                <span>{mode === 'leader' ? 'Arif sedang mengoordinasikan tim...' : mode === 'orchestrator' ? 'Agen sedang bekerja dan berdiskusi...' : 'OpenCode sedang memproses...'}</span>
               </div>
             </div>
           )}
@@ -1016,9 +1127,6 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="chat-form">
-          <label htmlFor="chat-input" className="chat-label">
-            {mode === 'leader' ? 'Instruksi untuk Arif (Project Lead)' : mode === 'orchestrator' ? 'Perintah untuk Tim (Multi-Agent)' : 'Message OpenCode'}
-          </label>
           <div className="chat-input-wrapper">
             <textarea
               id="chat-input"
@@ -1029,10 +1137,10 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
               onKeyDown={handleKeyDown}
               placeholder={
                 mode === 'leader'
-                  ? 'Contoh: "Arif, tugaskan Sinta untuk membuat campaign login"...'
+                  ? 'Instruksikan Arif (contoh: "Tugaskan Sinta untuk membuat campaign peluncuran")...'
                   : mode === 'orchestrator'
-                  ? 'Contoh: "Buatkan rencana peluncuran produk dengan budget dan desain"...'
-                  : 'Ask OpenCode something...'
+                  ? 'Berikan perintah untuk tim (contoh: "Buatkan rencana peluncuran produk lengkap")...'
+                  : 'Ketik pesan untuk OpenCode...'
               }
               aria-describedby="chat-help"
               rows="2"
@@ -1041,15 +1149,21 @@ export function ChatPanel({ externalTeamMembers, onRefreshTeam } = {}) {
             <button
               type="submit"
               className="chat-send-btn"
-              aria-label="Send message"
+              aria-label="Kirim instruksi"
               disabled={!inputValue.trim() || loading}
             >
-              {loading ? 'Mengirim...' : 'Kirim'}
+              <IconSend />
+              <span>{loading ? 'Mengirim...' : 'Kirim'}</span>
             </button>
           </div>
-          <small id="chat-help" className="chat-help">
-            Tekan Enter untuk mengirim, Shift+Enter untuk baris baru.
-          </small>
+          <div className="chat-form-footer">
+            <small id="chat-help" className="chat-help">
+              <kbd>Enter</kbd> untuk kirim <span aria-hidden="true">•</span> <kbd>Shift+Enter</kbd> untuk baris baru
+            </small>
+            <span className="chat-mode-status-tag">
+              {mode === 'leader' ? 'Arif (Project Lead)' : mode === 'orchestrator' ? 'Multi-Agent MCP' : 'OpenCode Chat'}
+            </span>
+          </div>
 
           {error && (
             <div className="chat-error-message" role="alert">

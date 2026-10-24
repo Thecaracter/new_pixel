@@ -1,7 +1,163 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+
+// Clean, high-craft SVG icons replacing AI-slop emojis
+function IconUsers() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function IconPlus() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+function IconSearch() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function IconCpu() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <rect x="9" y="9" width="6" height="6" />
+      <line x1="9" y1="1" x2="9" y2="4" />
+      <line x1="15" y1="1" x2="15" y2="4" />
+      <line x1="9" y1="20" x2="9" y2="23" />
+      <line x1="15" y1="20" x2="15" y2="23" />
+      <line x1="20" y1="9" x2="23" y2="9" />
+      <line x1="20" y1="14" x2="23" y2="14" />
+      <line x1="1" y1="9" x2="4" y2="9" />
+      <line x1="1" y1="14" x2="4" y2="14" />
+    </svg>
+  );
+}
+
+function IconMapPin() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
+function IconEdit() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function IconPower() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+      <line x1="12" y1="2" x2="12" y2="12" />
+    </svg>
+  );
+}
+
+function IconCheck() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function IconClose() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
 
 /**
- * Predefined color presets for characters in the virtual office
+ * 3D Office Location Mapping for each team agent
+ */
+const AGENT_LOCATION_MAP = {
+  arif: 'Ruang Rapat • Whiteboard & Meja Rapat',
+  rina: 'Meja 01 • Workstation Barat',
+  dimas: 'Meja 02 • Workstation Timur',
+  bayu: 'Meja 03 • Workstation Barat',
+  eko: 'Patroli Koridor Utama',
+  sinta: 'Breakout Lounge & Pantry',
+  mira: 'Ruang Rapat • Meja Utama',
+};
+
+/**
+ * Helper to parse and present clean model metadata
+ */
+function formatModelMeta(modelStr) {
+  if (!modelStr) {
+    return {
+      provider: 'Sistem',
+      cleanName: 'Mengikuti Model Global (Chat)',
+      isCustom: false,
+    };
+  }
+
+  const parts = modelStr.split('/');
+  const rawModel = parts[parts.length - 1];
+  let provider = parts.length > 1 ? parts[0] : 'AI';
+
+  if (provider === '9router' && parts.length > 2) {
+    provider = parts[1].toUpperCase();
+  }
+
+  const cleanName = rawModel
+    .replace(/^kr-/, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  return {
+    provider,
+    cleanName,
+    isCustom: true,
+  };
+}
+
+/**
+ * Predefined role presets for quick onboarding
+ */
+const COMMON_ROLE_PRESETS = [
+  { role: 'DevOps & Cloud Engineer', desc: 'Setup CI/CD pipeline, automasi server, dan monitoring infrastruktur cloud.' },
+  { role: 'Backend / Database Engineer', desc: 'Merancang arsitektur API, skema database, dan integrasi microservices.' },
+  { role: 'QA & Test Automation', desc: 'Menulis skenario pengujian unit & integration test untuk memastikan reliabilitas fitur.' },
+  { role: 'Copywriter & Content Lead', desc: 'Menulis copy pemasaran, newsletter, dan dokumentasi release notes produk.' },
+  { role: 'Security & Compliance Specialist', desc: 'Audit keamanan sistem, vulnerability scanning, dan kepatuhan data.' },
+];
+
+/**
+ * Predefined character outfit color presets
  */
 const SHIRT_PRESETS = [
   { label: 'Navy Blue', color: '#4a5fc1' },
@@ -34,10 +190,33 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'active' | 'inactive'
+
   // Statistics
   const totalCount = teamMembers.length;
   const activeCount = teamMembers.filter(m => m.active !== false).length;
   const inactiveCount = totalCount - activeCount;
+
+  // Filtered members list based on status and search query
+  const filteredMembers = useMemo(() => {
+    return teamMembers.filter((member) => {
+      const isActive = member.active !== false;
+      if (filterStatus === 'active' && !isActive) return false;
+      if (filterStatus === 'inactive' && isActive) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchName = (member.name || '').toLowerCase().includes(q);
+        const matchRole = (member.role || '').toLowerCase().includes(q);
+        const matchDesc = (member.description || '').toLowerCase().includes(q);
+        const matchModel = (member.model || '').toLowerCase().includes(q);
+        return matchName || matchRole || matchDesc || matchModel;
+      }
+      return true;
+    });
+  }, [teamMembers, filterStatus, searchQuery]);
 
   const showNotification = (msg) => {
     setSuccessMessage(msg);
@@ -70,6 +249,14 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
     });
     setError(null);
     setModalOpen(true);
+  };
+
+  const applyRolePreset = (preset) => {
+    setFormData((prev) => ({
+      ...prev,
+      role: preset.role,
+      description: preset.desc,
+    }));
   };
 
   const handleToggleActive = async (member) => {
@@ -215,10 +402,12 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
       {/* Top Banner & Title */}
       <div className="settings-header-card">
         <div className="settings-header-info">
-          <h2>👥 Pengaturan Tim & Agen AI</h2>
+          <div className="settings-title-row">
+            <span className="settings-header-icon"><IconUsers /></span>
+            <h2>Roster Tim & Model AI</h2>
+          </div>
           <p>
-            Kelola keanggotaan kantor virtual, status aktif, spesifikasi model LLM tiap agent,
-            serta sinkronisasi avatar di visualisasi 3D.
+            Kelola agen kantor virtual, tetapkan model LLM spesifik per peran kerja, dan pantau posisi karakter di ruang 3D.
           </p>
         </div>
         <button
@@ -226,115 +415,221 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
           className="btn-add-agent"
           onClick={openAddModal}
         >
-          <span>➕</span> Tambah Anggota Baru
+          <IconPlus />
+          <span>Tambah Anggota Baru</span>
         </button>
       </div>
 
       {/* Success Notification Alert */}
       {successMessage && (
         <div className="settings-alert-success" role="status">
-          <span>✅</span> {successMessage}
+          <span className="alert-icon"><IconCheck /></span>
+          <span>{successMessage}</span>
         </div>
       )}
 
-      {/* Summary KPI Cards */}
+      {/* Summary KPI Metrics Strip */}
       <div className="settings-stats-row">
         <div className="stat-card">
-          <div className="stat-label">Total Roster</div>
-          <div className="stat-val">{totalCount} Orang</div>
+          <div className="stat-header">
+            <span className="stat-label">Total Roster</span>
+            <span className="stat-icon-wrapper"><IconUsers /></span>
+          </div>
+          <div className="stat-val">{totalCount} Anggota</div>
+          <div className="stat-subtext">Roster agen terdaftar</div>
         </div>
         <div className="stat-card stat-card-active">
-          <div className="stat-label">Aktif di Kantor 3D</div>
-          <div className="stat-val">🟢 {activeCount} Orang</div>
+          <div className="stat-header">
+            <span className="stat-label">Aktif di Kantor 3D</span>
+            <span className="stat-presence-dot dot-active" aria-hidden="true"></span>
+          </div>
+          <div className="stat-val">{activeCount} Online</div>
+          <div className="stat-subtext">Hadir dalam simulasi ruangan</div>
         </div>
         <div className="stat-card stat-card-inactive">
-          <div className="stat-label">Non-Aktif</div>
-          <div className="stat-val">⚪ {inactiveCount} Orang</div>
+          <div className="stat-header">
+            <span className="stat-label">Non-Aktif</span>
+            <span className="stat-presence-dot dot-inactive" aria-hidden="true"></span>
+          </div>
+          <div className="stat-val">{inactiveCount} Standby</div>
+          <div className="stat-subtext">Sedang diistirahatkan</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Model AI Tersedia</div>
-          <div className="stat-val">🤖 {availableModels.length} Model</div>
+          <div className="stat-header">
+            <span className="stat-label">Model AI Terkoneksi</span>
+            <span className="stat-icon-wrapper"><IconCpu /></span>
+          </div>
+          <div className="stat-val">{availableModels.length} Model</div>
+          <div className="stat-subtext">LLM backend gateway siap</div>
+        </div>
+      </div>
+
+      {/* Search & Filter Toolbar */}
+      <div className="settings-toolbar">
+        <div className="settings-filter-pills" role="tablist" aria-label="Filter status agen">
+          <button
+            type="button"
+            className={`filter-pill ${filterStatus === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('all')}
+          >
+            Semua ({totalCount})
+          </button>
+          <button
+            type="button"
+            className={`filter-pill ${filterStatus === 'active' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('active')}
+          >
+            Aktif di 3D ({activeCount})
+          </button>
+          <button
+            type="button"
+            className={`filter-pill ${filterStatus === 'inactive' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('inactive')}
+          >
+            Non-Aktif ({inactiveCount})
+          </button>
+        </div>
+
+        <div className="settings-search-box">
+          <span className="search-icon"><IconSearch /></span>
+          <input
+            type="text"
+            className="settings-search-input"
+            placeholder="Cari nama, role, atau model..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="search-clear-btn"
+              onClick={() => setSearchQuery('')}
+              aria-label="Hapus pencarian"
+            >
+              <IconClose />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Team Members Grid */}
       <div className="agents-grid">
-        {teamMembers.map((member) => {
-          const isActive = member.active !== false;
-          const isDefault = member.isDefault || ['arif', 'rina', 'dimas', 'bayu', 'sinta', 'mira', 'eko'].includes(member.id);
+        {filteredMembers.length === 0 ? (
+          <div className="agents-empty-search">
+            <span className="empty-search-icon"><IconSearch /></span>
+            <h4>Tidak ada anggota tim yang cocok</h4>
+            <p>Coba kata kunci pencarian lain atau pilih tab filter yang berbeda.</p>
+          </div>
+        ) : (
+          filteredMembers.map((member) => {
+            const isActive = member.active !== false;
+            const isDefault = member.isDefault || ['arif', 'rina', 'dimas', 'bayu', 'sinta', 'mira', 'eko'].includes(member.id);
+            const locationLabel = AGENT_LOCATION_MAP[member.id.toLowerCase()] || 'Area Kantor 3D • Siap Bertugas';
+            const modelMeta = formatModelMeta(member.model);
 
-          return (
-            <div key={member.id} className={`agent-card ${isActive ? 'card-active' : 'card-inactive'}`}>
-              <div className="agent-card-header">
-                <div
-                  className="agent-avatar"
-                  style={{ backgroundColor: member.shirtColor || '#4a5fc1' }}
-                  title={`Warna Karakter: ${member.shirtColor || '#4a5fc1'}`}
-                >
-                  {member.name ? member.name.charAt(0).toUpperCase() : '?'}
-                </div>
-                <div className="agent-title-block">
-                  <div className="agent-name-row">
-                    <span className="agent-name">{member.name}</span>
-                    {isDefault && <span className="badge-default">Default</span>}
+            return (
+              <div key={member.id} className={`agent-card ${isActive ? 'card-active' : 'card-inactive'}`}>
+                {/* Agent Card Header */}
+                <div className="agent-card-header">
+                  <div
+                    className="agent-avatar"
+                    style={{
+                      backgroundColor: member.shirtColor || '#4a5fc1',
+                      border: `2px solid ${member.shirtColor || '#4a5fc1'}`,
+                    }}
+                    title={`Warna Karakter: ${member.shirtColor || '#4a5fc1'}`}
+                  >
+                    <span className="avatar-letter">{member.name ? member.name.charAt(0).toUpperCase() : '?'}</span>
+                    <span className={`avatar-status-pip ${isActive ? 'pip-active' : 'pip-inactive'}`} />
                   </div>
-                  <div className="agent-role">{member.role}</div>
+                  <div className="agent-title-block">
+                    <div className="agent-name-row">
+                      <span className="agent-name">{member.name}</span>
+                      <span className={`badge-tier ${isDefault ? 'badge-default' : 'badge-custom-agent'}`}>
+                        {isDefault ? 'Bawaan' : 'Kustom'}
+                      </span>
+                    </div>
+                    <div className="agent-role">{member.role}</div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`status-toggle-pill ${isActive ? 'pill-active' : 'pill-inactive'}`}
+                    onClick={() => handleToggleActive(member)}
+                    title={isActive ? 'Klik untuk non-aktifkan dari ruang 3D' : 'Klik untuk aktifkan di ruang 3D'}
+                  >
+                    <span className={`status-dot ${isActive ? 'dot-active' : 'dot-inactive'}`} aria-hidden="true"></span>
+                    <span>{isActive ? 'Aktif' : 'Non-Aktif'}</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className={`status-toggle-pill ${isActive ? 'pill-active' : 'pill-inactive'}`}
-                  onClick={() => handleToggleActive(member)}
-                  title={isActive ? 'Klik untuk non-aktifkan' : 'Klik untuk aktifkan'}
-                >
-                  {isActive ? '🟢 Aktif' : '⚪ Non-Aktif'}
-                </button>
-              </div>
 
-              <div className="agent-description">
-                {member.description || 'Tidak ada deskripsi spesifik.'}
-              </div>
+                {/* 3D Office Location Tag */}
+                <div className="agent-location-tag" title="Posisi keberadaan di kantor virtual 3D">
+                  <span className="location-icon"><IconMapPin /></span>
+                  <span className="location-text">{locationLabel}</span>
+                </div>
 
-              {/* Per-Agent Model Selector */}
-              <div className="agent-model-box">
-                <label htmlFor={`model-select-${member.id}`} className="agent-model-label">
-                  <span>🤖 Model AI:</span>
-                </label>
-                <select
-                  id={`model-select-${member.id}`}
-                  className="agent-model-select"
-                  value={member.model || ''}
-                  onChange={(e) => handleModelChangeQuick(member, e.target.value)}
-                >
-                  <option value="">🌐 Default (Ikuti Pilihan Chat)</option>
-                  {availableModels.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* Scope & Responsibilities */}
+                <div className="agent-description">
+                  {member.description || 'Tidak ada deskripsi spesifik.'}
+                </div>
 
-              {/* Card Footer Actions */}
-              <div className="agent-card-actions">
-                <button
-                  type="button"
-                  className="btn-card-action btn-edit"
-                  onClick={() => openEditModal(member)}
-                >
-                  ✏️ Edit
-                </button>
-                <button
-                  type="button"
-                  className="btn-card-action btn-delete"
-                  onClick={() => handleDeleteMember(member)}
-                  title={isDefault ? 'Non-aktifkan agent' : 'Hapus agent permanen'}
-                >
-                  {isDefault ? '⏹️ Non-aktifkan' : '🗑️ Hapus'}
-                </button>
+                {/* Model AI Engineering Console Section */}
+                <div className="agent-model-box">
+                  <div className="model-box-header">
+                    <div className="model-header-left">
+                      <span className="model-label-icon"><IconCpu /></span>
+                      <span className="model-label-text">Model LLM</span>
+                    </div>
+                    <span className={`model-status-chip ${modelMeta.isCustom ? 'chip-custom' : 'chip-inherited'}`}>
+                      {modelMeta.isCustom ? 'Dedicated' : 'Global Default'}
+                    </span>
+                  </div>
+
+                  <div className="model-active-display">
+                    <span className="model-provider-tag">{modelMeta.provider}</span>
+                    <span className="model-name-text">{modelMeta.cleanName}</span>
+                  </div>
+
+                  <select
+                    id={`model-select-${member.id}`}
+                    className="agent-model-select"
+                    value={member.model || ''}
+                    onChange={(e) => handleModelChangeQuick(member, e.target.value)}
+                    aria-label={`Pilih model AI untuk ${member.name}`}
+                  >
+                    <option value="">Default (Ikuti Pilihan Chat Global)</option>
+                    {availableModels.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Card Footer Actions */}
+                <div className="agent-card-actions">
+                  <button
+                    type="button"
+                    className="btn-card-action btn-edit"
+                    onClick={() => openEditModal(member)}
+                  >
+                    <IconEdit />
+                    <span>Edit Profil</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-card-action btn-delete"
+                    onClick={() => handleDeleteMember(member)}
+                    title={isDefault ? 'Non-aktifkan agen dari roster' : 'Hapus agen permanen'}
+                  >
+                    {isDefault ? <IconPower /> : <IconTrash />}
+                    <span>{isDefault ? 'Non-aktifkan' : 'Hapus'}</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Modal Dialog: Add / Edit Agent */}
@@ -342,19 +637,59 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
         <div className="settings-modal-backdrop" onClick={() => setModalOpen(false)}>
           <div className="settings-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editingMember ? `✏️ Edit Agen: ${editingMember.name}` : '➕ Tambah Anggota / Agen Baru'}</h3>
+              <div className="modal-title-wrap">
+                <span className="modal-title-icon">{editingMember ? <IconEdit /> : <IconPlus />}</span>
+                <h3>{editingMember ? `Edit Profil: ${editingMember.name}` : 'Tambah Anggota Tim Baru'}</h3>
+              </div>
               <button
                 type="button"
                 className="modal-close-btn"
                 onClick={() => setModalOpen(false)}
+                aria-label="Tutup dialog"
               >
-                ✕
+                <IconClose />
               </button>
             </div>
 
-            {error && <div className="modal-error-box">⚠️ {error}</div>}
+            {error && <div className="modal-error-box">{error}</div>}
 
             <form onSubmit={handleSubmitForm} className="modal-form">
+              {/* Quick Live Preview Card */}
+              <div className="modal-preview-strip">
+                <div
+                  className="preview-avatar"
+                  style={{ backgroundColor: formData.shirtColor || '#38bdf8' }}
+                >
+                  {formData.name ? formData.name.charAt(0).toUpperCase() : '?'}
+                </div>
+                <div className="preview-meta">
+                  <div className="preview-name">{formData.name || 'Nama Agen'}</div>
+                  <div className="preview-role">{formData.role || 'Role / Jabatan'}</div>
+                </div>
+                <span className={`preview-badge ${formData.active ? 'badge-active' : 'badge-inactive'}`}>
+                  {formData.active ? 'Aktif di 3D' : 'Non-Aktif'}
+                </span>
+              </div>
+
+              {/* Quick Role Presets (only when adding new) */}
+              {!editingMember && (
+                <div className="form-group">
+                  <label className="form-label-sub">Pilih Role Siap Pakai (Opsional):</label>
+                  <div className="preset-roles-list">
+                    {COMMON_ROLE_PRESETS.map((p, idx) => (
+                      <button
+                        type="button"
+                        key={idx}
+                        className="preset-role-chip"
+                        onClick={() => applyRolePreset(p)}
+                      >
+                        {p.role.split('/')[0].trim()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="form-group">
                 <label htmlFor="agent-form-name">Nama Anggota / Agent *</label>
                 <input
@@ -397,7 +732,7 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
                   value={formData.model}
                   onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                 >
-                  <option value="">🌐 Default (Ikuti Pilihan Global)</option>
+                  <option value="">Default (Ikuti Pilihan Global)</option>
                   {availableModels.map((m) => (
                     <option key={m} value={m}>
                       {m}
@@ -432,7 +767,7 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
                     checked={formData.active}
                     onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
                   />
-                  <span>Status Aktif (muncul di ruang 3D & dapat didelegasikan tugas)</span>
+                  <span>Status Kehadiran (Muncul di ruang 3D dan siap didelegasikan tugas)</span>
                 </label>
               </div>
 

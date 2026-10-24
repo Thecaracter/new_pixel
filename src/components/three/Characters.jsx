@@ -95,6 +95,133 @@ function EkoWalker() {
 }
 
 /**
+ * Generic routine used by every roster member, including custom agents.
+ * Keeps each agent productive at their home spot, then gives them a short
+ * walk-and-look-around break on a safe corridor route.
+ */
+function pointOnRoute(route, progress) {
+  if (!route || route.length < 2) return { point: route?.[0] || [0, 0, 0], angle: 0 };
+  const lengths = [];
+  let total = 0;
+  for (let i = 0; i < route.length - 1; i += 1) {
+    const dx = route[i + 1][0] - route[i][0];
+    const dz = route[i + 1][2] - route[i][2];
+    const length = Math.hypot(dx, dz);
+    lengths.push(length);
+    total += length;
+  }
+  let distance = Math.min(1, Math.max(0, progress)) * total;
+  for (let i = 0; i < lengths.length; i += 1) {
+    if (distance <= lengths[i] || i === lengths.length - 1) {
+      const segmentProgress = lengths[i] === 0 ? 0 : distance / lengths[i];
+      const from = route[i];
+      const to = route[i + 1];
+      return {
+        point: [from[0] + (to[0] - from[0]) * segmentProgress, 0, from[2] + (to[2] - from[2]) * segmentProgress],
+        angle: Math.atan2(to[0] - from[0], to[2] - from[2]),
+      };
+    }
+    distance -= lengths[i];
+  }
+  return { point: route[route.length - 1], angle: 0 };
+}
+
+function AgentRoutine({ member, home, corridor, route = null, homeSitting = true, canRoam = false, lookDirection = Math.PI, activity = 'typing', longHair = false }) {
+  const groupRef = useRef();
+  const [state, setState] = React.useState({ phase: 'work', activity, walking: false, lookDirection });
+
+  useFrame((frame) => {
+    if (!groupRef.current) return;
+
+    const cycle = (frame.clock.getElapsedTime() + (home[0] * 1.7 + home[2] * 0.9)) % 32;
+    let phase = 'work';
+    let nextActivity = activity;
+    let walking = false;
+    let direction = lookDirection;
+    let progress = 0;
+
+    const activeRoute = route || [home, corridor];
+
+    if (!canRoam || cycle < 12) {
+      phase = 'work';
+      nextActivity = activity;
+    } else if (cycle < 13) {
+      // Stand up before moving, preventing a seated-to-walking pop.
+      phase = 'depart';
+      nextActivity = 'idle';
+      direction = Math.atan2(corridor[0] - home[0], corridor[2] - home[2]);
+    } else if (cycle < 18) {
+      phase = 'outbound';
+      nextActivity = 'walking';
+      walking = true;
+      progress = (cycle - 13) / 5;
+      direction = Math.atan2(corridor[0] - home[0], corridor[2] - home[2]);
+    } else if (cycle < 23) {
+      phase = 'break';
+      nextActivity = 'talking';
+      direction = Math.atan2(home[0] - corridor[0], home[2] - corridor[2]);
+    } else if (cycle < 28) {
+      phase = 'returning';
+      nextActivity = 'walking';
+      walking = true;
+      progress = (cycle - 23) / 5;
+      direction = Math.atan2(home[0] - corridor[0], home[2] - corridor[2]);
+    } else {
+      // Settle at the chair for a full second before sitting again.
+      phase = 'arrive';
+      nextActivity = activity;
+      direction = lookDirection;
+    }
+
+    if (phase === 'outbound') {
+      const routeState = pointOnRoute(activeRoute, progress);
+      groupRef.current.position.set(...routeState.point);
+      direction = routeState.angle;
+    } else if (phase === 'returning') {
+      const routeState = pointOnRoute([...activeRoute].reverse(), progress);
+      groupRef.current.position.set(...routeState.point);
+      direction = routeState.angle;
+    } else if (phase === 'break') {
+      groupRef.current.position.set(corridor[0], 0, corridor[2]);
+    } else {
+      groupRef.current.position.set(home[0], 0, home[2]);
+    }
+
+    groupRef.current.rotation.y = direction;
+    const nextState = { phase, activity: nextActivity, walking, lookDirection: direction };
+    setState((previous) => (
+      previous.phase === phase &&
+      previous.activity === nextActivity &&
+      previous.walking === walking &&
+      previous.lookDirection === direction
+        ? previous
+        : nextState
+    ));
+  });
+
+  return (
+    <group ref={groupRef} position={home}>
+        <Character
+        position={[0, 0, 0]}
+        sitting={state.phase === 'work' && homeSitting}
+        activity={state.activity}
+        isWalking={state.walking}
+        // The routine group owns world rotation; avoid rotating the character twice.
+        lookDirection={0}
+        skinColor={member?.skinColor || '#f2c9a0'}
+        hairColor={member?.hairColor || '#2a2236'}
+        shirtColor={member?.shirtColor || '#38bdf8'}
+        pantsColor={member?.pantsColor || '#334155'}
+        longHair={longHair}
+        name={member?.name || 'Agent'}
+        tip={`${member?.name || 'Agent'} - ${member?.role || 'Team member'} | ${state.walking ? 'Istirahat sebentar di koridor' : 'Sedang bekerja'}`}
+      />
+      <SpeechBubble characterId={member?.id || 'agent'} position={[0, state.phase === 'work' && homeSitting ? 1.9 : 2.2, 0]} delay={1200} />
+    </group>
+  );
+}
+
+/**
  * Arif (Project Lead Routine)
  * Dynamically moves between Whiteboard and Meeting Table:
  * - 0s..12s: Writing sprint goals on whiteboard [13.2, 0, 1.1]
@@ -460,40 +587,28 @@ export const Characters = React.memo(function Characters({ teamMembers = [] }) {
     <group name="office-characters">
       {/* 1. Rina - Seated at Desk 1 (Workstation Wing) */}
       {isRinaActive && (
-        <group position={[2.6, 0, 2.95]}>
-          <Character
-            position={[0, 0, 0]}
-            sitting={true}
-            activity="typing"
-            lookDirection={Math.PI}
-            skinColor={rina?.skinColor || "#f2c9a0"}
-            hairColor={rina?.hairColor || "#3a2a24"}
-            shirtColor={rina?.shirtColor || "#2fa7a0"}
-            pantsColor={rina?.pantsColor || "#3b4468"}
-            name={rina?.name || "Rina"}
-            tip={`${rina?.name || 'Rina'} – ${rina?.role || 'Akuntan'} | ${rina?.description || 'Mengetik laporan bulanan'}`}
-          />
-          <SpeechBubble characterId="rina" position={[0, 1.9, 0]} delay={0} />
-        </group>
+        <AgentRoutine
+          member={rina}
+          home={[2.6, 0, 2.95]}
+          corridor={[8.4, 0, 3.6]}
+          route={[[2.6, 0, 2.95], [2.6, 0, 3.65], [8.4, 0, 3.65]]}
+          canRoam
+          lookDirection={Math.PI}
+          activity="typing"
+        />
       )}
 
       {/* 2. Dimas - Seated at Desk 2 (Workstation Wing) */}
       {isDimasActive && (
-        <group position={[6.6, 0, 2.95]}>
-          <Character
-            position={[0, 0, 0]}
-            sitting={true}
-            activity="typing"
-            lookDirection={Math.PI}
-            skinColor={dimas?.skinColor || "#d9a273"}
-            hairColor={dimas?.hairColor || "#1f1b2e"}
-            shirtColor={dimas?.shirtColor || "#8a63d2"}
-            pantsColor={dimas?.pantsColor || "#3b4468"}
-            name={dimas?.name || "Dimas"}
-            tip={`${dimas?.name || 'Dimas'} – ${dimas?.role || 'Desainer'} | ${dimas?.description || 'Menyusun mockup'}`}
-          />
-          <SpeechBubble characterId="dimas" position={[0, 1.9, 0]} delay={800} />
-        </group>
+        <AgentRoutine
+          member={dimas}
+          home={[6.6, 0, 2.95]}
+          corridor={[8.4, 0, 3.65]}
+          route={[[6.6, 0, 2.95], [6.6, 0, 3.65], [8.4, 0, 3.65]]}
+          canRoam
+          lookDirection={Math.PI}
+          activity="typing"
+        />
       )}
 
       {/* 3. Eko - Walker across central hallway */}
@@ -510,42 +625,29 @@ export const Characters = React.memo(function Characters({ teamMembers = [] }) {
 
       {/* 7. Mira - Seated at Meeting Table in Glass Meeting Room */}
       {isMiraActive && (
-        <group position={[11.6, 0, 3.4]}>
-          <Character
-            position={[0, 0, 0]}
-            sitting={true}
-            activity="phone"
-            lookDirection={Math.PI / 2}
-            skinColor={mira?.skinColor || "#f2c9a0"}
-            hairColor={mira?.hairColor || "#4a2c2a"}
-            shirtColor={mira?.shirtColor || "#f2b84b"}
-            pantsColor={mira?.pantsColor || "#3b4468"}
-            longHair={true}
-            name={mira?.name || "Mira"}
-            tip={`${mira?.name || 'Mira'} – ${mira?.role || 'Sales'} | ${mira?.description || 'Telepon dengan klien di ruang rapat'}`}
-          />
-          <SpeechBubble characterId="mira" position={[0, 1.9, 0]} delay={4000} />
-        </group>
+        <AgentRoutine member={mira} home={[11.6, 0, 3.4]} corridor={[10.8, 0, 5.4]} canRoam={false} lookDirection={Math.PI / 2} activity="phone" longHair />
       )}
 
       {/* Custom newly added members rendered at extra spots */}
       {customMembers.map((member, idx) => {
         const spot = EXTRA_SPOTS[idx % EXTRA_SPOTS.length];
+        const corridor = idx % 2 === 0 ? [8.4, 0, 5.8] : [8.8, 0, 7.4];
+        const safeRoute = spot.sitting && idx % EXTRA_SPOTS.length === 0
+          ? [spot.position, [6.6, 0, 6.25], [8.4, 0, 6.25]]
+          : null;
         return (
-          <group key={member.id} position={spot.position}>
-            <Character
-              position={[0, 0, 0]}
-              sitting={spot.sitting}
-              activity={spot.activity}
-              lookDirection={spot.lookDirection}
-              skinColor={member.skinColor || "#f2c9a0"}
-              hairColor={member.hairColor || "#2a2236"}
-              shirtColor={member.shirtColor || "#38bdf8"}
-              pantsColor={member.pantsColor || "#334155"}
-              name={member.name}
-              tip={`${member.name} – ${member.role} | ${member.description || 'Bertugas di kantor virtual'}`}
-            />
-          </group>
+          <AgentRoutine
+            key={member.id}
+            member={member}
+            home={spot.position}
+            corridor={corridor}
+            homeSitting={spot.sitting}
+            route={safeRoute}
+            canRoam={Boolean(safeRoute)}
+            lookDirection={spot.lookDirection}
+            activity={spot.activity === 'phone' ? 'phone' : 'typing'}
+            longHair={idx % 3 === 1}
+          />
         );
       })}
     </group>
