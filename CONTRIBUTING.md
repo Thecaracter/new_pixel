@@ -1,10 +1,10 @@
-# Contributing to Kantor Virtual — Pixel Works 🏢✨
+# Contributing to Kantor Virtual — Pixel Works
 
-Terima kasih atas minat Anda untuk berkontribusi! Project ini bersifat open-source dan kami sangat menyambut kontribusi dari komunitas—baik berupa perbaikan bug, penambahan fitur AI agent baru, peningkatan visual 3D, maupun perbaikan dokumentasi.
+Terima kasih atas minat Anda untuk berkontribusi. Proyek ini bersifat open-source dan kami menyambut kontribusi dari komunitas—baik berupa perbaikan bug, penambahan fitur AI agent baru, peningkatan visual 3D, maupun perbaikan dokumentasi.
 
 ---
 
-## 🛠️ Langkah Memulai (Getting Started)
+## Langkah Memulai (Getting Started)
 
 1. **Fork** repositori ini ke akun GitHub Anda.
 2. **Clone** hasil fork ke mesin lokal:
@@ -28,7 +28,7 @@ Terima kasih atas minat Anda untuk berkontribusi! Project ini bersifat open-sour
 
 ---
 
-## 🧪 Panduan Menjalankan & Menguji (Testing)
+## Panduan Menjalankan & Menguji (Testing)
 
 Sebelum membuat Pull Request, pastikan seluruh pengujian lokal lulus tanpa error:
 
@@ -46,20 +46,20 @@ Jika Anda memodifikasi atau menambah fitur baru di backend / AI agent:
 
 ---
 
-## 💡 Ide & Area Kontribusi
+## Ide & Area Kontribusi
 
 Berikut beberapa area yang sangat terbuka untuk kolaborasi:
-- 🎨 **3D & Visual**: Menambah variasi furniture kantor, animasi karakter baru di Three.js, atau efek cuaca/siang-malam.
-- 🤖 **AI Agents & MCP**: Menambahkan tool domain baru di `server/mcp/tools.js` (misal: integrasi GitHub, analitik SEO, code linter).
-- 📋 **Kanban Board**: Drag-and-drop antar kolom, label tag prioritas, dan filter tanggal deadline.
-- 📱 **Mobile & PWA**: Penyempurnaan responsivitas pada layar mobile kecil dan mode offline.
+- **3D & Visual**: Menambah variasi furniture kantor, animasi karakter baru di Three.js, atau efek pencahayaan dinamis.
+- **AI Agents & MCP**: Menambahkan tool domain baru di `server/mcp/tools.js` (misal: integrasi GitHub API, analisis performa kode, linter).
+- **Kanban Board**: Drag-and-drop antar kolom, label tag prioritas, dan filter tanggal deadline.
+- **Mobile & PWA**: Penyempurnaan responsivitas pada layar mobile kecil dan mode offline.
 
 ---
 
-## 📝 Format Pesan Commit
+## Format Pesan Commit
 
 Gunakan konvensi commit standar (Conventional Commits):
-- `feat: tambah tool MCP untuk analisis SEO`
+- `feat: tambah tool MCP untuk analisis data`
 - `fix: tangani error koneksi backend pada chat panel`
 - `docs: perbarui panduan konfigurasi environment`
 - `style: perbaiki styling bubble chat dan kontras warna`
@@ -67,7 +67,7 @@ Gunakan konvensi commit standar (Conventional Commits):
 
 ---
 
-## 🚀 Mengirim Pull Request (PR)
+## Mengirim Pull Request (PR)
 
 1. Push perubahan ke fork GitHub Anda:
    ```bash
@@ -75,13 +75,13 @@ Gunakan konvensi commit standar (Conventional Commits):
    ```
 2. Buka GitHub dan buat **Pull Request** ke branch `master`.
 3. Tuliskan deskripsi ringkas mengenai:
-   - Apa yang diubah / ditambahkan.
+   - Apa yang diubah atau ditambahkan.
    - Mengapa perubahan tersebut dibutuhkan.
    - Hasil pengujian lokal (`npm run test:unit` & `npm run build`).
-4. Tunggu review dari maintainer! Kami akan dengan senang hati meninjau dan menggabungkan kontribusi Anda.
+4. Tim maintainer akan meninjau dan menggabungkan kontribusi Anda.
 
 ---
 
-## 📄 Lisensi
+## Lisensi
 
 Dengan berkontribusi pada repositori ini, Anda setuju bahwa kontribusi Anda dilisensikan di bawah [MIT License](LICENSE).
