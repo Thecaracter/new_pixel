@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="128" fill="#0f172a" />
+  <g transform="translate(256, 256)">
+    <!-- Isometric Cube Top Face -->
+    <path d="M0 -150 L130 -75 L0 0 L-130 -75 Z" fill="#6366f1" />
+    <!-- Isometric Cube Left Face -->
+    <path d="M-130 -75 L0 0 L0 150 L-130 75 Z" fill="#4f46e5" />
+    <!-- Isometric Cube Right Face -->
+    <path d="M0 0 L130 -75 L130 75 L0 150 Z" fill="#2fa7a0" />
+    <!-- Inner Accent Cube -->
+    <path d="M0 -60 L50 -30 L0 0 L-50 -30 Z" fill="#a5b4fc" opacity="0.9" />
+    <path d="M-50 -30 L0 0 L0 60 L-50 30 Z" fill="#818cf8" opacity="0.9" />
+    <path d="M0 0 L50 -30 L50 30 L0 60 Z" fill="#5eead4" opacity="0.9" />
+  </g>
+</svg>
