@@ -1,3 +1,4 @@
+import { executeCatalogTool } from './catalogRunner.js';
 /**
  * MCP Server — handles tool discovery, execution, and resource management.
  * Single server instance that exposes all domain tools to agents.

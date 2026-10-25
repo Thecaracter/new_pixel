@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { McpSkillStoreModal } from './McpSkillStoreModal';
 
 // Clean, high-craft SVG icons replacing AI-slop emojis
 function IconUsers() {
@@ -181,6 +182,8 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
   const [modalOpen, setModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [expandedPromptAgentId, setExpandedPromptAgentId] = useState(null);
+  const [storeModalOpen, setStoreModalOpen] = useState(false);
+  const [storeTargetAgentId, setStoreTargetAgentId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     role: '',
@@ -324,6 +327,17 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
     }
   };
 
+  const handleRemoveMcp = async (agentId, mcpId) => {
+    try {
+      const res = await fetch(`/api/team/${agentId}/mcp/${mcpId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Gagal mencopot tool');
+      showNotification('Tool berhasil dilepas dari agent');
+      if (onUpdateTeam) onUpdateTeam();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const handleSubmitForm = async (e) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.role.trim()) {
@@ -419,14 +433,28 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
             Kelola agen kantor virtual, tetapkan model LLM spesifik per peran kerja, dan pantau posisi karakter di ruang 3D.
           </p>
         </div>
-        <button
-          type="button"
-          className="btn-add-agent"
-          onClick={openAddModal}
-        >
-          <IconPlus />
-          <span>Tambah Anggota Baru</span>
-        </button>
+        <div className="settings-header-actions-group">
+          <button
+            type="button"
+            className="btn-open-mcp-store"
+            onClick={() => {
+              setStoreTargetAgentId(null);
+              setStoreModalOpen(true);
+            }}
+            title="Buka Hub Katalog MCP & Skills untuk memasang tools ke agent"
+          >
+            <span className="btn-store-icon">🔌</span>
+            <span>Katalog MCP & Skills</span>
+          </button>
+          <button
+            type="button"
+            className="btn-add-agent"
+            onClick={openAddModal}
+          >
+            <IconPlus />
+            <span>Tambah Anggota Baru</span>
+          </button>
+        </div>
       </div>
 
       {/* Success Notification Alert */}
@@ -620,6 +648,41 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
                   </div>
                 )}
 
+                {/* Installed MCPs & Skills */}
+                {((Array.isArray(member.installedMCPs) && member.installedMCPs.length > 0) || (Array.isArray(member.installedSkills) && member.installedSkills.length > 0)) && (
+                  <div className="agent-installed-tools-box">
+                    <span className="installed-tools-label">Tools & Skills Terpasang:</span>
+                    <div className="installed-tools-pills">
+                      {member.installedMCPs?.map(mcp => (
+                        <span key={mcp.id} className="installed-tool-chip chip-mcp" title={mcp.name}>
+                          <span>{mcp.icon || '📦'} {mcp.name.replace(' MCP Server', '').replace(' MCP', '')}</span>
+                          <button
+                            type="button"
+                            className="btn-chip-remove"
+                            onClick={() => handleRemoveMcp(member.id, mcp.id)}
+                            title={`Copot ${mcp.name} dari ${member.name}`}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                      {member.installedSkills?.map(sk => (
+                        <span key={sk.id} className="installed-tool-chip chip-skill" title={sk.name}>
+                          <span>{sk.icon || '✨'} {sk.name.replace(' Skill', '')}</span>
+                          <button
+                            type="button"
+                            className="btn-chip-remove"
+                            onClick={() => handleRemoveMcp(member.id, sk.id)}
+                            title={`Copot ${sk.name} dari ${member.name}`}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Model AI Engineering Console Section */}
                 <div className="agent-model-box">
                   <div className="model-box-header">
@@ -655,6 +718,17 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
 
                 {/* Card Footer Actions */}
                 <div className="agent-card-actions">
+                  <button
+                    type="button"
+                    className="btn-card-action btn-add-tool"
+                    onClick={() => {
+                      setStoreTargetAgentId(member.id);
+                      setStoreModalOpen(true);
+                    }}
+                    title={`Pasang MCP tool atau skill khusus untuk ${member.name}`}
+                  >
+                    <span>🔌 + Tool</span>
+                  </button>
                   <button
                     type="button"
                     className="btn-card-action btn-edit"
@@ -857,6 +931,14 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
           </div>
         </div>
       )}
+      {/* MCP & Skill Store Modal */}
+      <McpSkillStoreModal
+        isOpen={storeModalOpen}
+        onClose={() => setStoreModalOpen(false)}
+        teamMembers={teamMembers}
+        initialAgentId={storeTargetAgentId}
+        onUpdateTeam={onUpdateTeam}
+      />
     </div>
   );
 }

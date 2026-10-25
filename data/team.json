@@ -67,7 +67,8 @@
     "hairColor": "#2a2236",
     "skinColor": "#d9a273",
     "pantsColor": "#1f2937",
-    "isDefault": false
+    "isDefault": false,
+    "installedMCPs": []
   },
   {
     "id": "rina",

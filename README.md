@@ -14,7 +14,8 @@
   <a href="https://vitejs.dev"><img src="https://img.shields.io/badge/Vite-5.4-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" /></a>
   <a href="https://expressjs.com"><img src="https://img.shields.io/badge/Express-4.18-000000?style=flat-square&logo=express&logoColor=white" alt="Express" /></a>
   <img src="https://img.shields.io/badge/MCP-Compatible-FF6F00?style=flat-square&logo=json&logoColor=white" alt="MCP Compatible" />
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="MIT License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0%20%7C%20Commercial-blue.svg?style=flat-square" alt="AGPL-3.0 / Commercial License" /></a>
+  <a href="CLA.md"><img src="https://img.shields.io/badge/CLA-Assistant-green.svg?style=flat-square" alt="CLA Assistant" /></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome" /></a>
 </p>
 
@@ -376,10 +377,12 @@ new_pixel/
 │   ├── team-management.mjs
 │   └── thread-and-project-kanban.mjs
 ├── .env.example                  # Template variabel lingkungan
-├── CONTRIBUTING.md               # Pedoman kontribusi untuk developer
-├── LICENSE                       # Berkas lisensi terbuka MIT
-├── package.json                  # Konfigurasi dependensi dan skrip proyek
-└── vite.config.js                # Konfigurasi bundler Vite dan API reverse proxy
+├── .github/                      # GitHub templates (Pull Request checklist & CLA)
+├── CLA.md                        # Contributor License Agreement (Legal relicensing rights)
+├── CONTRIBUTING.md               # Contributing guidelines & workflow
+├── LICENSE                       # Dual Licensing Notice (GNU AGPLv3 + Commercial)
+├── package.json                  # Project dependencies and test scripts
+└── vite.config.js                # Vite bundler & reverse proxy configuration
 ```
 
 ---
@@ -411,17 +414,29 @@ Frontend Vite tidak dapat menghubungi API backend pada port `3001`.
 
 ---
 
-## Panduan Kontribusi
+## Panduan Kontribusi (Contributing Guidelines)
 
-Kontribusi dari komunitas sangat diapresiasi. Anda dapat membantu melalui:
-- Pelaporan bug dan saran peningkatan fitur melalui [GitHub Issues](https://github.com/<username>/new_pixel/issues).
-- Pembuatan Pull Request untuk perbaikan kode, penambahan tool MCP baru, atau peningkatan visual 3D.
-- Baca petunjuk teknis selengkapnya pada berkas [CONTRIBUTING.md](CONTRIBUTING.md).
+We welcome global community contributions! / Kami sangat menyambut kontribusi dari komunitas global!
+
+- **Contributor License Agreement (CLA)**: All contributors must sign the [CLA.md](CLA.md) before Pull Requests can be merged. An automated bot ([CLA Assistant](https://cla-assistant.io/)) will guide you on your first PR.
+- **Workflow & Standards**: Please review [CONTRIBUTING.md](CONTRIBUTING.md) for branch naming conventions, architecture rules (`data/team.json`, MCP tools), and required testing commands (`npm test`, `npm run build`).
+- **Issues & Feedback**: Report bugs and propose new features via [GitHub Issues](https://github.com/<username>/new_pixel/issues).
 
 ---
 
-## Lisensi
+## Lisensi & Dual Licensing (License)
 
-Proyek ini didistribusikan di bawah lisensi terbuka [MIT License](LICENSE).
+Pixel Works Virtual Office is released under a **Dual Licensing model**:
 
-Hak Cipta (c) 2026 Pixel Works / Kantor Virtual Contributors.
+1. **Open Source Community License (GNU AGPLv3)**:
+   - Free for non-commercial, personal, and open-source usage.
+   - Any public network deployment or modification (SaaS) **must** keep the entire source code open under the same GNU AGPLv3 license.
+2. **Commercial Proprietary License**:
+   - Required for organizations or individuals who wish to integrate this project into closed-source enterprise software, private SaaS, OEM distribution, or commercial resale without copyleft obligations.
+   - To acquire a commercial license, please contact the Project Owner directly.
+
+Full legal texts:
+- [LICENSE](LICENSE) (Dual Licensing Notice & GNU AGPLv3)
+- [CLA.md](CLA.md) (Contributor License Agreement)
+
+Copyright (c) 2026 Pixel Works Virtual Office. All Rights Reserved.

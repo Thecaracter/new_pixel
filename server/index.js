@@ -1,3 +1,4 @@
+import { MCP_CATALOG, searchCatalog, getCatalogItem } from './mcp/catalog.js';
 import express from 'express';
 import { spawn } from 'child_process';
 import path from 'path';
@@ -1221,6 +1222,109 @@ app.get('/api/mcp/tools', (req, res) => {
   const { domain } = req.query;
   const tools = mcpServer.listTools(domain || null);
   res.json({ tools, domains: mcpServer.listDomains() });
+});
+
+/**
+ * GET /api/mcp/catalog
+ * Search and browse available live MCP servers from registry & verified catalog
+ */
+app.get('/api/mcp/catalog', async (req, res) => {
+  try {
+    const { query, category, type } = req.query;
+    const items = await searchCatalog({ query, category, type });
+    res.json({ success: true, catalog: items });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to search MCP catalog', details: err.message });
+  }
+});
+
+/**
+ * POST /api/team/:id/mcp
+ * Attach an MCP server or skill to a specific agent
+ */
+app.post('/api/team/:id/mcp', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { mcpId, config = {} } = req.body;
+
+    const index = TEAM_MEMBERS.findIndex(m => m.id === id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    const catalogItem = await getCatalogItem(mcpId);
+    if (!catalogItem) {
+      return res.status(404).json({ error: 'MCP item not found in catalog' });
+    }
+
+    const member = { ...TEAM_MEMBERS[index] };
+    const installedRecord = {
+      id: catalogItem.id,
+      name: catalogItem.name,
+      packageName: catalogItem.packageName || catalogItem.id,
+      version: catalogItem.version || '1.0.0',
+      type: catalogItem.type || 'mcp',
+      category: catalogItem.category || 'engineering',
+      icon: catalogItem.icon || '📦',
+      source: catalogItem.source || 'NPM Live Registry',
+      command: catalogItem.command || `npx -y ${catalogItem.id}`,
+      tools: catalogItem.tools || [],
+      config,
+      installedAt: new Date().toISOString()
+    };
+
+    if (catalogItem.type === 'skill') {
+      member.installedSkills = Array.isArray(member.installedSkills) ? member.installedSkills : [];
+      const existingIdx = member.installedSkills.findIndex(s => s.id === mcpId);
+      if (existingIdx !== -1) {
+        member.installedSkills[existingIdx] = installedRecord;
+      } else {
+        member.installedSkills.push(installedRecord);
+      }
+    } else {
+      member.installedMCPs = Array.isArray(member.installedMCPs) ? member.installedMCPs : [];
+      const existingIdx = member.installedMCPs.findIndex(m => m.id === mcpId);
+      if (existingIdx !== -1) {
+        member.installedMCPs[existingIdx] = installedRecord;
+      } else {
+        member.installedMCPs.push(installedRecord);
+      }
+    }
+
+    TEAM_MEMBERS[index] = member;
+    saveTeamMembersToDisk(TEAM_MEMBERS);
+    res.json({ success: true, member, installed: installedRecord });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to install MCP', details: err.message });
+  }
+});
+
+/**
+ * DELETE /api/team/:id/mcp/:mcpId
+ * Detach/uninstall an MCP server or skill from an agent
+ */
+app.delete('/api/team/:id/mcp/:mcpId', (req, res) => {
+  try {
+    const { id, mcpId } = req.params;
+    const index = TEAM_MEMBERS.findIndex(m => m.id === id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    const member = { ...TEAM_MEMBERS[index] };
+    if (Array.isArray(member.installedMCPs)) {
+      member.installedMCPs = member.installedMCPs.filter(m => m.id !== mcpId);
+    }
+    if (Array.isArray(member.installedSkills)) {
+      member.installedSkills = member.installedSkills.filter(s => s.id !== mcpId);
+    }
+
+    TEAM_MEMBERS[index] = member;
+    saveTeamMembersToDisk(TEAM_MEMBERS);
+    res.json({ success: true, member, uninstalledMcpId: mcpId });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to uninstall MCP', details: err.message });
+  }
 });
 
 // Health check endpoint

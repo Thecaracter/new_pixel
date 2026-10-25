@@ -70,6 +70,8 @@ export function getAgent(agentId) {
     active: member.active !== false,
     description: member.description || `Membantu bidang ${member.role}`,
     systemPrompt: member.systemPrompt || fallbackSystemPrompt,
+    installedMCPs: Array.isArray(member.installedMCPs) ? member.installedMCPs : [],
+    installedSkills: Array.isArray(member.installedSkills) ? member.installedSkills : [],
   };
 }
 

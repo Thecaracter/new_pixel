@@ -1,87 +1,80 @@
-# Contributing to Kantor Virtual — Pixel Works
+# Contributing to Pixel Works Virtual Office
 
-Terima kasih atas minat Anda untuk berkontribusi. Proyek ini bersifat open-source dan kami menyambut kontribusi dari komunitas—baik berupa perbaikan bug, penambahan fitur AI agent baru, peningkatan visual 3D, maupun perbaikan dokumentasi.
+Thank you for your interest in contributing to **Pixel Works Virtual Office**! We welcome community contributions, including bug fixes, MCP server integrations, 3D Three.js performance improvements, and UI/UX polish.
 
 ---
 
-## Langkah Memulai (Getting Started)
+## ⚖️ Mandatory Requirement: Contributor License Agreement (CLA)
 
-1. **Fork** repositori ini ke akun GitHub Anda.
-2. **Clone** hasil fork ke mesin lokal:
+Before your contribution or Pull Request (PR) can be reviewed and merged, **you must read and agree to our [Contributor License Agreement (CLA)](./CLA.md)**.
+
+### Why Does This Project Require a CLA?
+Pixel Works Virtual Office operates under a **Dual Licensing model (GNU AGPLv3 + Commercial License)**:
+1. **Free for Open-Source Community**: The source code is freely available to study, inspect, run, and develop under the copyleft GNU AGPLv3.
+2. **Protection Against Unauthorized Commercial Exploitation**: Third parties, corporations, and vendors **MAY NOT** take this code, close the source, rebrand it, or resell it as a proprietary SaaS or commercial distribution without purchasing an official Commercial License from the Project Owner.
+3. **Relicensing & Commercial Authority**: By signing the CLA, you grant the Project Owner the legal authority to license and sell commercial/enterprise editions of the software (including your contributions) to corporate clients, while your authorship remains permanently recognized in Git commit history.
+
+When you open a Pull Request, the automated **CLA Assistant** bot will prompt you to complete a 1-click digital signature via your GitHub account.
+
+---
+
+## 🚀 Contribution Workflow
+
+### 1. Fork & Setup
+1. **Fork** this repository to your GitHub account.
+2. Clone your fork locally:
    ```bash
-   git clone https://github.com/<username>/new_pixel.git
+   git clone https://github.com/<your-username>/new_pixel.git
    cd new_pixel
    ```
-3. **Install Dependencies**:
+3. Install dependencies:
    ```bash
    npm install
    ```
-4. **Buat Branch Baru**:
-   Gunakan nama branch yang deskriptif:
-   ```bash
-   # Fitur baru
-   git checkout -b feat/nama-fitur
 
-   # Perbaikan bug
-   git checkout -b fix/deskripsi-bug
-   ```
+### 2. Branch Naming Conventions
+Create a dedicated branch for your work:
+```bash
+# New features or MCP integrations
+git checkout -b feat/mcp-postgres-integration
 
----
+# Bug fixes
+git checkout -b fix/threejs-lighting-glitch
 
-## Panduan Menjalankan & Menguji (Testing)
+# Documentation improvements
+git checkout -b docs/clarify-api-endpoints
+```
 
-Sebelum membuat Pull Request, pastikan seluruh pengujian lokal lulus tanpa error:
+### 3. Architecture & Code Guidelines
+- **AI Agent System Prompts**: All agent prompts, roster definitions, and model selections are centralized in `data/team.json`. **Do not create redundant prompt files like `AGENTS.md`**.
+- **MCP Server Integrations**: MCP tools must be declared in `server/mcp/catalog.js` and verified through `server/mcp/catalogRunner.js`.
+- **Three.js Virtual Office**: Maintain clean boundary collision coordinates in `src/components/three/` so character avatars and furniture do not clip through walls.
+
+### 4. Mandatory Testing & Verification
+Before submitting a Pull Request, ensure that all unit tests and production builds pass cleanly:
 
 ```bash
-# Jalankan unit tests
-npm run test:unit
+# Run the test suite (all 29 tests must pass)
+npm test
 
-# Jalankan production build untuk memastikan tidak ada error bundle
+# Verify production Vite build (zero errors)
 npm run build
 ```
 
-Jika Anda memodifikasi atau menambah fitur baru di backend / AI agent:
-- Tambahkan pengujian baru di direktori `tests/`.
-- Pastikan tidak ada race condition pada penyimpanan file durabel (`server/storage.js`).
-
----
-
-## Ide & Area Kontribusi
-
-Berikut beberapa area yang sangat terbuka untuk kolaborasi:
-- **3D & Visual**: Menambah variasi furniture kantor, animasi karakter baru di Three.js, atau efek pencahayaan dinamis.
-- **AI Agents & MCP**: Menambahkan tool domain baru di `server/mcp/tools.js` (misal: integrasi GitHub API, analisis performa kode, linter).
-- **Kanban Board**: Drag-and-drop antar kolom, label tag prioritas, dan filter tanggal deadline.
-- **Mobile & PWA**: Penyempurnaan responsivitas pada layar mobile kecil dan mode offline.
-
----
-
-## Format Pesan Commit
-
-Gunakan konvensi commit standar (Conventional Commits):
-- `feat: tambah tool MCP untuk analisis data`
-- `fix: tangani error koneksi backend pada chat panel`
-- `docs: perbarui panduan konfigurasi environment`
-- `style: perbaiki styling bubble chat dan kontras warna`
-- `test: tambah unit test untuk isolasi thread chat`
-
----
-
-## Mengirim Pull Request (PR)
-
-1. Push perubahan ke fork GitHub Anda:
+### 5. Submitting Your Pull Request
+1. Commit your changes with concise, conventional commit messages:
    ```bash
-   git push origin feat/nama-fitur
+   git commit -m "feat(mcp): add live search integration test"
    ```
-2. Buka GitHub dan buat **Pull Request** ke branch `master`.
-3. Tuliskan deskripsi ringkas mengenai:
-   - Apa yang diubah atau ditambahkan.
-   - Mengapa perubahan tersebut dibutuhkan.
-   - Hasil pengujian lokal (`npm run test:unit` & `npm run build`).
-4. Tim maintainer akan meninjau dan menggabungkan kontribusi Anda.
+2. Push your branch to GitHub:
+   ```bash
+   git push origin feat/your-feature-name
+   ```
+3. Open a Pull Request on the main repository.
+4. Fill out the PR template checklist and check the **CLA Agreement** checkbox.
+5. Click the link provided by the **CLA Assistant bot** comment to sign the CLA.
 
 ---
 
-## Lisensi
-
-Dengan berkontribusi pada repositori ini, Anda setuju bahwa kontribusi Anda dilisensikan di bawah [MIT License](LICENSE).
+## 💼 Inquiries Regarding Commercial Licenses
+If you represent an organization interested in obtaining a **Commercial / Proprietary License** (to use this software in closed-source enterprise environments, custom private SaaS, or OEM white-label distribution), please contact the Project Owner directly.
