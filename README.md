@@ -57,7 +57,7 @@ Aplikasi dapat dijalankan secara lokal dalam beberapa langkah:
 Clone repositori dan pasang seluruh dependensi:
 
 ```bash
-git clone https://github.com/<username>/new_pixel.git
+git clone https://github.com/Thecaracter/new_pixel.git
 cd new_pixel
 npm install
 ```
@@ -420,7 +420,7 @@ We welcome global community contributions! / Kami sangat menyambut kontribusi da
 
 - **Contributor License Agreement (CLA)**: All contributors must sign the [CLA.md](CLA.md) before Pull Requests can be merged. An automated bot ([CLA Assistant](https://cla-assistant.io/)) will guide you on your first PR.
 - **Workflow & Standards**: Please review [CONTRIBUTING.md](CONTRIBUTING.md) for branch naming conventions, architecture rules (`data/team.json`, MCP tools), and required testing commands (`npm test`, `npm run build`).
-- **Issues & Feedback**: Report bugs and propose new features via [GitHub Issues](https://github.com/<username>/new_pixel/issues).
+- **Issues & Feedback**: Report bugs and propose new features via [GitHub Issues](https://github.com/Thecaracter/new_pixel/issues).
 
 ---
 
