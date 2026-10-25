@@ -133,11 +133,21 @@ export const TEAM_MEMBERS = loadTeamMembersFromDisk();
  * reflecting active team members and their roles.
  */
 export function buildLeaderSystemPrompt(customMembers = null) {
+  if (!customMembers) {
+    try {
+      const disk = loadTeamMembersFromDisk();
+      if (Array.isArray(disk) && disk.length > 0) {
+        TEAM_MEMBERS.splice(0, TEAM_MEMBERS.length, ...disk);
+      }
+    } catch (_) {}
+  }
   const members = customMembers || TEAM_MEMBERS.filter(m => m.active !== false);
   const rosterListing = members.map(m => `- ${m.name} (${m.role}): ${m.description || ''}`).join('\n');
   const allowedNames = members.map(m => m.name).join('/');
+  const arifMember = members.find(m => m.id === 'arif');
+  const customArifPrompt = arifMember?.systemPrompt ? `${arifMember.systemPrompt}\n\n---\n\n` : '';
 
-  return `Anda adalah Arif, Project Lead di Pixel Works Virtual Office.
+  return `${customArifPrompt}Anda adalah Arif, Project Lead di Pixel Works Virtual Office.
 Tugas utama Anda adalah menjadi Koordinator Tim yang bertanggung jawab, teliti, realistis, dan anti-halusinasi.
 Selalu bertindak dan menjawab sebagai Arif (Project Lead), BUKAN sebagai OpenCode, model AI umum, atau asisten generik.
 
@@ -1237,7 +1247,7 @@ app.get('/api/team', (req, res) => {
 
 // POST /api/team — Add new agent / team member
 app.post('/api/team', (req, res) => {
-  const { name, role, description, model, active, shirtColor, hairColor, skinColor, pantsColor } = req.body;
+  const { name, role, description, model, active, shirtColor, hairColor, skinColor, pantsColor, systemPrompt } = req.body;
 
   if (!name || typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({ error: 'Validation error', details: 'name is required' });
@@ -1268,6 +1278,7 @@ app.post('/api/team', (req, res) => {
     name: name.trim(),
     role: role.trim(),
     description: description && typeof description === 'string' ? description.trim() : `Bertanggung jawab atas ${role.trim()}`,
+    ...(systemPrompt && typeof systemPrompt === 'string' && { systemPrompt: systemPrompt.trim() }),
     active: active !== undefined ? Boolean(active) : true,
     model: model && typeof model === 'string' && model.trim() ? model.trim() : null,
     shirtColor: shirtColor || '#38bdf8',
@@ -1293,7 +1304,7 @@ app.put('/api/team/:id', (req, res) => {
   }
 
   const existing = TEAM_MEMBERS[index];
-  const { name, role, description, model, active, shirtColor, hairColor, skinColor, pantsColor } = req.body;
+  const { name, role, description, model, active, shirtColor, hairColor, skinColor, pantsColor, systemPrompt } = req.body;
 
   // Validate model format if specified
   if (model !== undefined && model !== null && model !== '') {
@@ -1310,6 +1321,7 @@ app.put('/api/team/:id', (req, res) => {
     ...(name !== undefined && { name: name.trim() }),
     ...(role !== undefined && { role: role.trim() }),
     ...(description !== undefined && { description: description.trim() }),
+    ...(systemPrompt !== undefined && { systemPrompt: typeof systemPrompt === 'string' ? systemPrompt.trim() : null }),
     ...(model !== undefined && { model: model && model.trim() ? model.trim() : null }),
     ...(active !== undefined && { active: Boolean(active) }),
     ...(shirtColor !== undefined && { shirtColor }),

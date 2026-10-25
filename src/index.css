@@ -4894,3 +4894,122 @@ header p {
 
 
 
+
+/* ========================================================
+ * Agent Capabilities, AST Indexing, & OP Prompt Styling
+ * ======================================================== */
+.agent-capabilities-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.cap-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2.5px 8px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cap-pill-op {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+
+.cap-pill-ast {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0284c7;
+  border: 1px solid rgba(14, 165, 233, 0.25);
+}
+
+.cap-pill-mcp {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.agent-prompt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.btn-toggle-prompt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(74, 95, 193, 0.06);
+  border: 1px solid rgba(74, 95, 193, 0.15);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4a5fc1;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.btn-toggle-prompt:hover {
+  background: rgba(74, 95, 193, 0.12);
+  border-color: rgba(74, 95, 193, 0.3);
+}
+
+.prompt-toggle-chevron {
+  font-size: 9px;
+  opacity: 0.8;
+}
+
+.agent-prompt-drawer {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  max-height: 180px;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.prompt-pre-content {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #38bdf8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .btn-toggle-prompt {
+    background: rgba(147, 197, 253, 0.08);
+    border-color: rgba(147, 197, 253, 0.18);
+    color: #93c5fd;
+  }
+  :root:not([data-theme='light']) .btn-toggle-prompt:hover {
+    background: rgba(147, 197, 253, 0.15);
+  }
+  :root:not([data-theme='light']) .cap-pill-op {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+  :root:not([data-theme='light']) .cap-pill-ast {
+    background: rgba(14, 165, 233, 0.18);
+    color: #38bdf8;
+    border-color: rgba(14, 165, 233, 0.35);
+  }
+  :root:not([data-theme='light']) .cap-pill-mcp {
+    background: rgba(16, 185, 129, 0.18);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.35);
+  }
+}

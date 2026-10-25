@@ -1,3 +1,17 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { getCodebaseMap } from '../indexing/repoMap.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, '..', '..');
+
+function isSafePath(targetPath) {
+  const resolved = path.resolve(ROOT_DIR, targetPath);
+  return resolved.startsWith(ROOT_DIR) && !resolved.includes('node_modules') && !resolved.includes('.git');
+}
+
 /**
  * MCP Tool Definitions — domain-specific tools available to agents.
  * Each tool has: name, description, domain, parameters schema, and execute function.
@@ -141,6 +155,118 @@ const designTools = [
 
 // ─── Engineering Tools (Bayu) ───
 const engineeringTools = [
+  {
+    name: 'get_codebase_map',
+    description: 'Mendapatkan peta pohon file dan komponen/fungsi yang diekspor di proyek (src/ dan server/)',
+    domain: 'engineering',
+    parameters: {
+      type: 'object',
+      properties: {
+        force_refresh: { type: 'boolean', default: false }
+      }
+    },
+    execute: async ({ force_refresh = false }) => {
+      return { map: getCodebaseMap(force_refresh) };
+    }
+  },
+  {
+    name: 'read_file_content',
+    description: 'Membaca isi file kode di proyek secara langsung dari disk (on-demand line range)',
+    domain: 'engineering',
+    parameters: {
+      type: 'object',
+      properties: {
+        file_path: { type: 'string', description: 'Path relatif file, misal src/components/ChatPanel.jsx' },
+        start_line: { type: 'number', default: 1, description: 'Baris awal (1-indexed)' },
+        line_count: { type: 'number', default: 60, description: 'Jumlah baris (maks 120)' }
+      },
+      required: ['file_path']
+    },
+    execute: async ({ file_path, start_line = 1, line_count = 60 }) => {
+      if (!isSafePath(file_path)) {
+        return { error: 'Access denied: path is outside project root or in restricted directories' };
+      }
+      const fullPath = path.resolve(ROOT_DIR, file_path);
+      if (!fs.existsSync(fullPath)) {
+        return { error: `File not found: ${file_path}` };
+      }
+      try {
+        const fileData = fs.readFileSync(fullPath, 'utf8');
+        const lines = fileData.split(/\r?\n/);
+        const actualStart = Math.max(1, start_line);
+        const actualCount = Math.min(120, Math.max(1, line_count));
+        const slice = lines.slice(actualStart - 1, actualStart - 1 + actualCount);
+        const formatted = slice.map((line, idx) => `${actualStart + idx}: ${line}`).join('\n');
+        return {
+          file_path,
+          total_lines: lines.length,
+          start_line: actualStart,
+          end_line: actualStart + slice.length - 1,
+          content: formatted
+        };
+      } catch (err) {
+        return { error: `Failed to read file: ${err.message}` };
+      }
+    }
+  },
+  {
+    name: 'search_codebase',
+    description: 'Mencari kata kunci atau simbol fungsi di file kode proyek (src/ dan server/)',
+    domain: 'engineering',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Kata kunci pencarian' },
+        max_results: { type: 'number', default: 10 }
+      },
+      required: ['query']
+    },
+    execute: async ({ query, max_results = 10 }) => {
+      const results = [];
+      const searchDirs = ['src', 'server'];
+      const max = Math.min(25, Math.max(1, max_results));
+
+      function searchRecursive(dir) {
+        if (results.length >= max) return;
+        try {
+          const items = fs.readdirSync(dir, { withFileTypes: true });
+          for (const item of items) {
+            if (results.length >= max) break;
+            const full = path.join(dir, item.name);
+            const rel = path.relative(ROOT_DIR, full).replace(/\\/g, '/');
+            if (item.isDirectory()) {
+              if (!['node_modules', '.git', 'dist', '.sokudo'].includes(item.name)) {
+                searchRecursive(full);
+              }
+            } else if (item.isFile() && /\.(jsx?|mjs|tsx?|json|css)$/i.test(item.name)) {
+              try {
+                const text = fs.readFileSync(full, 'utf8');
+                const lines = text.split(/\r?\n/);
+                for (let i = 0; i < lines.length; i++) {
+                  if (lines[i].toLowerCase().includes(query.toLowerCase())) {
+                    results.push({
+                      file: rel,
+                      line: i + 1,
+                      snippet: lines[i].trim().slice(0, 120)
+                    });
+                    if (results.length >= max) break;
+                  }
+                }
+              } catch (_) {}
+            }
+          }
+        } catch (_) {}
+      }
+
+      for (const d of searchDirs) {
+        const full = path.join(ROOT_DIR, d);
+        if (fs.existsSync(full)) searchRecursive(full);
+      }
+
+      return { query, total_matches: results.length, matches: results };
+    }
+  },
+
   {
     name: 'scaffold_component',
     description: 'Membuat scaffold/template komponen React',

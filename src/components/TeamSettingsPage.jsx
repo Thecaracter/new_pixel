@@ -111,6 +111,8 @@ const AGENT_LOCATION_MAP = {
   eko: 'Patroli Koridor Utama',
   sinta: 'Breakout Lounge & Pantry',
   mira: 'Ruang Rapat • Meja Utama',
+  doni: 'Meja 04 • QA & Testing Lab',
+  fajar: 'Server Rack & DevOps Station',
 };
 
 /**
@@ -178,10 +180,12 @@ const SHIRT_PRESETS = [
 export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableModels = [] }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [expandedPromptAgentId, setExpandedPromptAgentId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     role: '',
     description: '',
+    systemPrompt: '',
     model: '',
     active: true,
     shirtColor: '#38bdf8',
@@ -229,6 +233,7 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
       name: '',
       role: '',
       description: '',
+      systemPrompt: '',
       model: '',
       active: true,
       shirtColor: '#38bdf8',
@@ -243,6 +248,7 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
       name: member.name || '',
       role: member.role || '',
       description: member.description || '',
+      systemPrompt: member.systemPrompt || '',
       model: member.model || '',
       active: member.active !== false,
       shirtColor: member.shirtColor || '#38bdf8',
@@ -256,6 +262,7 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
       ...prev,
       role: preset.role,
       description: preset.desc,
+      systemPrompt: preset.systemPrompt || prev.systemPrompt,
     }));
   };
 
@@ -337,6 +344,7 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
             name: formData.name.trim(),
             role: formData.role.trim(),
             description: formData.description.trim(),
+            systemPrompt: formData.systemPrompt.trim() || null,
             model: formData.model.trim() || null,
             active: formData.active,
             shirtColor: formData.shirtColor,
@@ -366,6 +374,7 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
             name: formData.name.trim(),
             role: formData.role.trim(),
             description: formData.description.trim(),
+            systemPrompt: formData.systemPrompt.trim() || null,
             model: formData.model.trim() || null,
             active: formData.active,
             shirtColor: formData.shirtColor,
@@ -568,10 +577,48 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
                   <span className="location-text">{locationLabel}</span>
                 </div>
 
+                {/* Capabilities Badges */}
+                <div className="agent-capabilities-strip">
+                  {member.systemPrompt && (
+                    <span className="cap-pill cap-pill-op" title="Agent dibekali System Prompt Overpowered (OP)">
+                      ⚡ OP Prompt
+                    </span>
+                  )}
+                  {(['bayu', 'doni', 'fajar'].includes(member.id) || (member.role && /engineer|devops|qa|software|testing|cloud/i.test(member.role))) && (
+                    <>
+                      <span className="cap-pill cap-pill-ast" title="Koneksi otomatis ke AST Codebase Indexer (~520 tokens)">
+                        🔍 AST Index
+                      </span>
+                      <span className="cap-pill cap-pill-mcp" title="Tools Codebase MCP: get_codebase_map, read_file_content, search_codebase">
+                        🛠️ MCP Tools
+                      </span>
+                    </>
+                  )}
+                </div>
+
                 {/* Scope & Responsibilities */}
                 <div className="agent-description">
                   {member.description || 'Tidak ada deskripsi spesifik.'}
                 </div>
+
+                {/* OP System Prompt Collapsible Preview (if available) */}
+                {member.systemPrompt && (
+                  <div className="agent-prompt-section">
+                    <button
+                      type="button"
+                      className="btn-toggle-prompt"
+                      onClick={() => setExpandedPromptAgentId(expandedPromptAgentId === member.id ? null : member.id)}
+                    >
+                      <span>{expandedPromptAgentId === member.id ? 'Tutup OP Prompt' : 'Lihat OP System Prompt'}</span>
+                      <span className="prompt-toggle-chevron">{expandedPromptAgentId === member.id ? '▲' : '▼'}</span>
+                    </button>
+                    {expandedPromptAgentId === member.id && (
+                      <div className="agent-prompt-drawer">
+                        <pre className="prompt-pre-content">{member.systemPrompt}</pre>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Model AI Engineering Console Section */}
                 <div className="agent-model-box">
@@ -723,6 +770,24 @@ export function TeamSettingsPage({ teamMembers = [], onUpdateTeam, availableMode
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
+              </div>
+
+              <div className="form-group">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label htmlFor="agent-form-prompt" style={{ margin: 0 }}>OP System Prompt / Instruksi Khusus (Opsional)</label>
+                  <span className="cap-pill cap-pill-op" style={{ fontSize: '10px' }}>⚡ OP Prompt</span>
+                </div>
+                <textarea
+                  id="agent-form-prompt"
+                  rows="4"
+                  style={{ fontFamily: 'monospace', fontSize: '11.5px', lineHeight: '1.4' }}
+                  placeholder="Instruksi sistem khusus untuk agent ini (misal: standar kualitas kode, testing kriteria, aturan pelaporan)..."
+                  value={formData.systemPrompt}
+                  onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
+                />
+                <small className="form-help">
+                  Petunjuk sistem ini akan diprioritaskan saat agent mengeksekusi tugas.
+                </small>
               </div>
 
               <div className="form-group">

@@ -551,6 +551,52 @@ function PrinterCabinet({ position = [0.5, 0, 7.4] }) {
   );
 }
 
+// High-tech DevOps Server Rack with status LEDs
+function ServerRack({ position = [0.5, 0, 3.8] }) {
+  return (
+    <group position={position} name="devops-server-rack">
+      {/* Tall Server Cabinet */}
+      <mesh position={[0, 1.2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.7, 2.4, 0.9]} />
+        <meshStandardMaterial color="#0f172a" metalness={0.8} roughness={0.3} />
+      </mesh>
+      {/* Server Rack Glass / Mesh Door */}
+      <mesh position={[0.36, 1.2, 0]}>
+        <boxGeometry args={[0.02, 2.3, 0.82]} />
+        <meshStandardMaterial color="#1e293b" transparent opacity={0.85} roughness={0.2} metalness={0.9} />
+      </mesh>
+      {/* 1U/2U Blade Units with LED indicators */}
+      {[0.4, 0.7, 1.0, 1.3, 1.6, 1.9].map((y, idx) => (
+        <group key={idx} position={[0.37, y, 0]}>
+          <mesh>
+            <boxGeometry args={[0.01, 0.18, 0.78]} />
+            <meshStandardMaterial color="#334155" metalness={0.7} />
+          </mesh>
+          {/* Green & Blue status LED lights */}
+          <mesh position={[0.01, 0.04, -0.3]}>
+            <sphereGeometry args={[0.018, 8, 8]} />
+            <meshBasicMaterial color={idx % 2 === 0 ? '#10b981' : '#38bdf8'} />
+          </mesh>
+          <mesh position={[0.01, 0.04, -0.24]}>
+            <sphereGeometry args={[0.018, 8, 8]} />
+            <meshBasicMaterial color="#10b981" />
+          </mesh>
+          <mesh position={[0.01, 0.04, -0.18]}>
+            <sphereGeometry args={[0.018, 8, 8]} />
+            <meshBasicMaterial color={idx === 1 ? '#f59e0b' : '#10b981'} />
+          </mesh>
+        </group>
+      ))}
+      <TooltipTrigger
+        name="Server Rack & DevOps Station"
+        role="Infrastruktur Cloud & CI/CD"
+        task="Docker containers, build pipelines, & server deployment"
+        position={[0, 1.5, 0]}
+      />
+    </group>
+  );
+}
+
 // Clean & Minimalist Pantry Corner
 function PantryCorner({ position = [2.4, 0, 9.4] }) {
   return (
@@ -641,16 +687,19 @@ export const Furniture = React.memo(function Furniture() {
       />
       <Chair position={[2.6, 0, 5.55]} color="#f26a5b" />
 
-      {/* Desk 4: Eko / Shared Workstation */}
+      {/* Desk 4: Doni (QA & Test Automation Lab) */}
       <Desk
         position={[6.6, 0, 4.6]}
-        mugColor="#4a5fc1"
-        hasPaper={false}
-        label="Meja 04 — Staging"
-        role="Admin / Shared"
-        task="Meja kelengkapan berkas & operasional"
+        mugColor="#38bdf8"
+        hasPaper={true}
+        label="Meja 04 — QA Lab (Doni)"
+        role="QA & Test Automation"
+        task="Testing otomatis, regression testing, & validasi kriteria"
       />
-      <Chair position={[6.6, 0, 5.55]} color="#f2b84b" />
+      <Chair position={[6.6, 0, 5.55]} color="#38bdf8" />
+
+      {/* DevOps & Infrastructure Server Rack (Fajar Station) */}
+      <ServerRack position={[0.5, 0, 3.8]} />
 
       {/* ===================== ZONE 2: GLASS MEETING ROOM ===================== */}
       {/* Meeting Table & 6 Chairs inside Glass Partition */}

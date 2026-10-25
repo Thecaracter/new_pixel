@@ -120,6 +120,8 @@ const DEFAULT_ROSTER = [
   { id: 'sinta', name: 'Sinta', role: 'Marketing / Growth', description: 'Menyusun strategi campaign promosi, copy pemasaran, dan go-to-market' },
   { id: 'mira', name: 'Mira', role: 'Sales / Client Relations', description: 'Komunikasi kebutuhan klien, pitching, dan relationship management' },
   { id: 'eko', name: 'Eko', role: 'Operations / Admin Support', description: 'Manajemen operasional, kelengkapan administrasi, dan alur dokumen' },
+  { id: 'doni', name: 'Doni', role: 'QA & Test Automation', description: 'Menulis skenario pengujian unit & integration test untuk memastikan reliabilitas fitur' },
+  { id: 'fajar', name: 'Fajar', role: 'DevOps & Infrastructure', description: 'Setup CI/CD pipeline, automasi server, dan monitoring infrastruktur cloud' },
 ];
 
 /**

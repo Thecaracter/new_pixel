@@ -26,6 +26,19 @@
         "TASK-2"
       ],
       "count": 2
+    },
+    "plan_1792881966485_s8ldd": {
+      "approvedAt": "2026-10-24T22:46:17.151Z",
+      "planId": "plan_1792881966485_s8ldd",
+      "planTitle": "Dummy Marketing Ads - Banner",
+      "taskIds": [
+        "TASK-1-_s8ldd-1-1-b0c859",
+        "TASK-2-_s8ldd-2-1-169c43",
+        "TASK-3",
+        "TASK-4",
+        "TASK-5"
+      ],
+      "count": 5
     }
   },
   "projects": [
@@ -36,6 +49,13 @@
       "scope": "Riset informasi/link resmi Google dan Jio; rekomendasi alternatif berlangganan; tanpa pembelian atau pendaftaran atas nama user.",
       "description": "Riset inisiatif pendaftaran Google One bersama Sinta.",
       "createdAt": "2026-10-24T11:30:00.000Z"
+    },
+    {
+      "id": "plan_1792881966485_s8ldd",
+      "name": "Dummy Marketing Ads - Banner",
+      "goal": "Membuat task dummy marketing berupa banner iklan ads dengan budget Rp1.000.000.",
+      "scope": "Marketing ads (channel ads), output minimal banner, budget Rp1.000.000, tanpa deadline spesifik.",
+      "createdAt": "2026-10-24T22:46:17.151Z"
     }
   ],
   "tasks": [
@@ -65,6 +85,76 @@
       "status": "pending",
       "column": "backlog",
       "createdAt": "2026-10-24T11:30:00.000Z"
+    },
+    {
+      "id": "TASK-1-_s8ldd-1-1-b0c859",
+      "planId": "plan_1792881966485_s8ldd",
+      "projectId": "plan_1792881966485_s8ldd",
+      "planTitle": "Dummy Marketing Ads - Banner",
+      "projectName": "Dummy Marketing Ads - Banner",
+      "title": "Koordinasi dan breakdown sprint dummy",
+      "description": "Memimpin koordinasi, memastikan task terpecah jelas, dan tracking progres dummy.",
+      "assignee": "Arif",
+      "role": "Project Lead / Coordinator",
+      "status": "pending",
+      "column": "backlog",
+      "createdAt": "2026-10-24T22:46:17.150Z"
+    },
+    {
+      "id": "TASK-2-_s8ldd-2-1-169c43",
+      "planId": "plan_1792881966485_s8ldd",
+      "projectId": "plan_1792881966485_s8ldd",
+      "planTitle": "Dummy Marketing Ads - Banner",
+      "projectName": "Dummy Marketing Ads - Banner",
+      "title": "Estimasi alokasi budget dummy",
+      "description": "Menghitung dan mengalokasikan budget Rp1.000.000 untuk kebutuhan dummy ads.",
+      "assignee": "Rina",
+      "role": "Finance / Accountant",
+      "status": "pending",
+      "column": "backlog",
+      "createdAt": "2026-10-24T22:46:17.150Z"
+    },
+    {
+      "id": "TASK-3",
+      "planId": "plan_1792881966485_s8ldd",
+      "projectId": "plan_1792881966485_s8ldd",
+      "planTitle": "Dummy Marketing Ads - Banner",
+      "projectName": "Dummy Marketing Ads - Banner",
+      "title": "Strategi dan copy iklan ads",
+      "description": "Menyusun konsep campaign dan copy untuk iklan ads dummy.",
+      "assignee": "Sinta",
+      "role": "Marketing / Growth",
+      "status": "pending",
+      "column": "backlog",
+      "createdAt": "2026-10-24T22:46:17.150Z"
+    },
+    {
+      "id": "TASK-4",
+      "planId": "plan_1792881966485_s8ldd",
+      "projectId": "plan_1792881966485_s8ldd",
+      "planTitle": "Dummy Marketing Ads - Banner",
+      "projectName": "Dummy Marketing Ads - Banner",
+      "title": "Desain banner iklan",
+      "description": "Membuat desain banner iklan sesuai konsep marketing.",
+      "assignee": "Dimas",
+      "role": "UI/UX Designer",
+      "status": "pending",
+      "column": "backlog",
+      "createdAt": "2026-10-24T22:46:17.150Z"
+    },
+    {
+      "id": "TASK-5",
+      "planId": "plan_1792881966485_s8ldd",
+      "projectId": "plan_1792881966485_s8ldd",
+      "planTitle": "Dummy Marketing Ads - Banner",
+      "projectName": "Dummy Marketing Ads - Banner",
+      "title": "Administrasi dokumen dummy",
+      "description": "Mengelola kelengkapan administrasi dan alur dokumen terkait dummy.",
+      "assignee": "Eko",
+      "role": "Operations / Admin Support",
+      "status": "pending",
+      "column": "backlog",
+      "createdAt": "2026-10-24T22:46:17.150Z"
     }
   ]
 }

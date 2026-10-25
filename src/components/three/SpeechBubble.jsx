@@ -9,10 +9,14 @@ export const KALIMAT = {
   sinta: ['Kampanye tayang besok.', 'Budget iklan masih cukup.', 'Setuju, mulai Senin!'],
   mira: ['Baik Pak, saya kirim ulang.', 'Penawarannya sudah saya cek.', 'Terima kasih waktunya!'],
   arif: ['Sprint ini ada 3 target.', 'Prioritas: onboarding dulu.', 'Ada yang mau nambah?'],
+  doni: ['Test suite 100% passing!', 'Validasi kriteria acceptance.', 'Edge case regression aman.'],
+  fajar: ['Pipeline CI/CD all green.', 'Monitoring server standby.', 'Container Docker stabil.'],
 };
 
+const DEFAULT_SENTENCES = ['Fokus menyelesaikan tugas.', 'Siap koordinasi tim.', 'Standby di kantor 3D.'];
+
 export function SpeechBubble({ characterId, position = [0, 2.1, 0], delay = 0 }) {
-  const sentences = KALIMAT[characterId] || [];
+  const sentences = KALIMAT[characterId?.toLowerCase()] || DEFAULT_SENTENCES;
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(false);
 

@@ -14,6 +14,8 @@ export const KALIMAT = {
   sinta: ['Kampanye tayang besok.', 'Budget iklan masih cukup.', 'Setuju, mulai Senin!'],
   mira: ['Baik Pak, saya kirim ulang.', 'Penawarannya sudah saya cek.', 'Terima kasih waktunya!'],
   arif: ['Sprint ini ada 3 target.', 'Prioritas: onboarding dulu.', 'Ada yang mau nambah?'],
+  doni: ['Test suite 100% passing!', 'Validasi kriteria acceptance.', 'Edge case regression aman.'],
+  fajar: ['Pipeline CI/CD all green.', 'Monitoring server standby.', 'Container Docker stabil.'],
 };
 
 /**
@@ -521,17 +523,19 @@ function BayuRoutine({ member }) {
 
 // Extra spots for newly added team members in the spacious partitioned office
 const EXTRA_SPOTS = [
-  // Spot 1: Shared Workstation Desk 4
+  // Spot 1: Shared Workstation Desk 4 (QA Lab / Doni)
   { position: [6.6, 0, 5.55], sitting: true, lookDirection: Math.PI, activity: 'typing' },
-  // Spot 2: Meeting Table East Chair (inside Glass Meeting Room)
+  // Spot 2: DevOps Server Rack Console (Infrastructure / Fajar)
+  { position: [1.3, 0, 3.8], sitting: false, lookDirection: -Math.PI / 2, activity: 'typing' },
+  // Spot 3: Meeting Table East Chair (inside Glass Meeting Room)
   { position: [14.8, 0, 3.4], sitting: true, lookDirection: -Math.PI / 2, activity: 'phone' },
-  // Spot 3: Meeting Table North-West Chair (inside Glass Meeting Room)
+  // Spot 4: Meeting Table North-West Chair (inside Glass Meeting Room)
   { position: [12.4, 0, 2.01], sitting: true, lookDirection: 0.5236, activity: 'typing' },
-  // Spot 4: Meeting Table South-West Chair (inside Glass Meeting Room)
+  // Spot 5: Meeting Table South-West Chair (inside Glass Meeting Room)
   { position: [12.4, 0, 4.79], sitting: true, lookDirection: 2.618, activity: 'phone' },
-  // Spot 5: Coffee counter / pantry
+  // Spot 6: Coffee counter / pantry
   { position: [3.8, 0, 9.4], sitting: false, lookDirection: -Math.PI * 0.4, activity: 'talking' },
-  // Spot 6: Bookshelf / reading nook
+  // Spot 7: Bookshelf / reading nook
   { position: [0.8, 0, 1.8], sitting: false, lookDirection: Math.PI * 0.8, activity: 'writing' },
 ];
 

@@ -1,3 +1,4 @@
+import { getCodebaseMap } from '../indexing/repoMap.js';
 /**
  * Orchestrator — Arif's brain. Analyzes user requests, delegates to agents,
  * facilitates inter-agent discussion, and compiles final responses.
@@ -131,7 +132,11 @@ function parseAgentResponse(rawText) {
  */
 function buildAgentToolContext(agentDef) {
   const toolsDesc = mcpServer.describeToolsForAgent(agentDef.domains);
-  return `\nTOOLS YANG TERSEDIA UNTUK ANDA:\n${toolsDesc}\n\nUntuk menggunakan tool, sertakan dalam response JSON:\n"tool_calls": [{"name": "tool_name", "args": {...}}]`;
+  let contextMap = '';
+  if (agentDef.domains?.includes('engineering') || agentDef.domains?.includes('operations')) {
+    contextMap = `\n\n${getCodebaseMap()}\n(Gunakan tool "read_file_content" atau "search_codebase" untuk memeriksa baris kode secara detail jika diperlukan)`;
+  }
+  return `\nTOOLS YANG TERSEDIA UNTUK ANDA:\n${toolsDesc}${contextMap}\n\nUntuk menggunakan tool, sertakan dalam response JSON:\n"tool_calls": [{"name": "tool_name", "args": {...}}]`;
 }
 
 /**
