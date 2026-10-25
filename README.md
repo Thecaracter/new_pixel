@@ -1,9 +1,15 @@
-# Kantor Virtual — Pixel Works
+# Pixel Works — Virtual Office
 
 <p align="center">
-  <strong>Autonomous 3D Virtual Office & Multi-Agent Collaboration Platform</strong>
+  <strong>Language / Pilihan Bahasa:</strong>
+  <a href="README.md"><strong>English 🇬🇧</strong></a> | 
+  <a href="README.id.md"><strong>Bahasa Indonesia 🇮🇩</strong></a>
+</p>
+
+<p align="center">
+  <strong>Autonomous 3D Virtual Workspace & Multi-Agent AI Collaboration Platform</strong>
   <br />
-  Ruang kantor virtual 3D isometrik dengan orkestrasi tim AI mandiri, integrasi Model Context Protocol (MCP), papan Kanban proyek, dan chat multi-thread persisten.
+  An isometric 3D virtual office featuring autonomous AI team orchestration, live Model Context Protocol (MCP) integrations, project-scoped Kanban pipelines, and persistent multi-thread chat.
 </p>
 
 <p align="center">
@@ -21,40 +27,40 @@
 
 ---
 
-## Daftar Isi (Table of Contents)
+## Table of Contents
 
 - [Quick Start](#quick-start)
-- [Fitur Utama](#fitur-utama)
-- [Arsitektur Sistem](#arsitektur-sistem)
-- [Roster Tim AI & Spesialisasi Agent](#roster-tim-ai--spesialisasi-agent)
+- [Key Features](#key-features)
+- [What We Are Looking For (Contribution Wishlist)](#-what-we-are-looking-for-contribution-wishlist)
+- [System Architecture](#system-architecture)
+- [AI Agent Roster & Specializations](#ai-agent-roster--specializations)
 - [Model Context Protocol (MCP) Tools](#model-context-protocol-mcp-tools)
-- [Alur Kerja Sprint & Pipeline Kanban](#alur-kerja-sprint--pipeline-kanban)
-- [Konfigurasi & Environment Variables](#konfigurasi--environment-variables)
-- [Dokumentasi REST API](#dokumentasi-rest-api)
-- [Pengujian & Verifikasi](#pengujian--verifikasi)
-- [Struktur Direktori Proyek](#struktur-direktori-proyek)
-- [Penyelesaian Masalah (Troubleshooting)](#penyelesaian-masalah-troubleshooting)
-- [Panduan Kontribusi](#panduan-kontribusi)
-- [Lisensi](#lisensi)
+- [Sprint Workflow & Kanban Pipeline](#sprint-workflow--kanban-pipeline)
+- [Configuration & Environment Variables](#configuration--environment-variables)
+- [REST API Reference](#rest-api-reference)
+- [Testing & Verification](#testing--verification)
+- [Directory Structure](#directory-structure)
+- [Troubleshooting](#troubleshooting)
+- [Contributing Guidelines](#contributing-guidelines)
+- [License & Dual Licensing](#license--dual-licensing)
 
 ---
 
 ## Quick Start
 
-Aplikasi dapat dijalankan secara lokal dalam beberapa langkah:
+Get the application running locally in just a few steps:
 
-### 1. Prasyarat Sistem
-- **Node.js** v18.0.0 atau versi lebih baru ([Unduh Node.js LTS](https://nodejs.org/))
-- **npm** v9+ (terpasang otomatis dengan Node.js)
-- *(Opsional)* **OpenCode CLI** v1.18+ untuk koneksi langsung ke provider LLM:
+### 1. Prerequisites
+- **Node.js** v18.0.0 or later ([Download Node.js LTS](https://nodejs.org/))
+- **npm** v9+ (bundled with Node.js)
+- *(Optional)* **OpenCode CLI** v1.18+ for direct LLM provider execution:
   ```bash
   npm install -g opencode
-  opencode providers # Konfigurasi kredensial penyedia AI
+  opencode providers # Configure AI model provider credentials
   ```
 
-### 2. Instalasi
-
-Clone repositori dan pasang seluruh dependensi:
+### 2. Installation
+Clone the repository and install all dependencies:
 
 ```bash
 git clone https://github.com/Thecaracter/new_pixel.git
@@ -62,71 +68,93 @@ cd new_pixel
 npm install
 ```
 
-Salin template konfigurasi bila ingin menyesuaikan konfigurasi default:
+Copy the example environment configuration:
 ```bash
 cp .env.example .env
 ```
 
-### 3. Menjalankan Aplikasi
-
-Jalankan server pengembangan (Express Backend API + Vite Frontend Dev Server):
+### 3. Running the Application
+Launch both backend API and Vite frontend dev server concurrently:
 
 ```bash
 npm run dev
 ```
 
-Akses aplikasi pada URL berikut:
-- **Web Interface**: [http://localhost:5173](http://localhost:5173)
+Open your browser to:
+- **Web Application**: [http://localhost:5173](http://localhost:5173)
 - **Backend API**: [http://127.0.0.1:3001](http://127.0.0.1:3001)
 
 > [!TIP]
-> **Mode Frontend-Only**: Jika Anda hanya ingin mengembangkan tampilan 3D atau antarmuka tanpa backend, jalankan `npm run dev:frontend`.
+> **Frontend-Only Mode**: If you only want to work on 3D graphics or UI components without running the backend server, run `npm run dev:frontend`.
 
 ---
 
-## Fitur Utama
+## Key Features
 
-### 1. Ruang Kantor 3D Isometrik Prosedural (Three.js & R3F)
-- Dirender secara native menggunakan **React Three Fiber** tanpa membutuhkan unduhan model GLTF/OBJ eksternal yang berat.
-- Rutinitas karakter dinamis: mengetik di meja kerja, rotasi kepala, berjalan di koridor, dan animasi kucing kantor (*Mochi the Cat*).
-- Kamera isometrik responsif dengan pergerakan parallax halus yang mengikuti pointer mouse dan input sentuh.
-- Efek pencahayaan lembut, bayangan isometrik, balon percakapan interaktif, dan partikel atmosfer kantor.
+### 1. Procedural 3D Isometric Office (Three.js & R3F)
+- Rendered natively using **React Three Fiber** without relying on heavy external GLTF/OBJ downloads.
+- Dynamic character routines: typing at workstations, head turning, corridor walking, and office pet interactions (*Mochi the Cat*).
+- Smooth isometric camera parallax responding to mouse pointer and touch gestures.
+- Soft isometric shadows, interactive chat speech bubbles, and office atmospheric lighting.
 
-### 2. Orkestrasi Multi-Agent AI Terdistribusi
-- **7 Persona Agent Spesifik**: Masing-masing memiliki batasan domain wewenang, sistem prompt teruji, dan akses tool mandiri.
-- **Leader Mode (Arif)**: Alur kerja 2 fase yang terstruktur:
-  1. *Clarifying Phase*: Elicitation requirement jika instruksi user belum cukup spesifik.
-  2. *Awaiting Confirmation*: Pembuatan proposal rencana sprint berisi daftar tugas terperinci untuk masing-masing agent.
-- **Multi-Agent Orchestrator (`/api/orchestrate`)**: Mengoordinasikan delegasi tugas silang, konsultasi antar-agent, dan sintesis hasil kerja terpadu.
-- **Model Switching On-the-Fly**: Pilihan dropdown model AI (Claude 3.5 Sonnet, Claude Opus, Claude Haiku, GPT-4, dll.) dengan reset sesi otomatis untuk mencegah polusi konteks.
+### 2. Autonomous Multi-Agent AI Orchestration
+- **7 Domain-Specialized Agent Personas**: Clear boundaries, hardened prompts, and specialized tool access.
+- **Leader Mode (Arif)**: Structured 2-phase coordination workflow:
+  1. *Clarifying Phase*: Requirements elicitation when user instructions are ambiguous.
+  2. *Awaiting Confirmation*: Generating detailed sprint plan proposals with itemized tasks per agent.
+- **Multi-Agent Orchestrator (`/api/orchestrate`)**: Cross-agent delegation, consultation, and collaborative task synthesis.
+- **On-the-Fly Model Switching**: Dropdown model selection (Claude 3.5 Sonnet, Claude Opus, GPT-4, etc.) with automatic session reset to prevent context bleed.
 
-### 3. Integrasi Model Context Protocol (MCP)
-- Penyediaan fungsi eksekusi nyata untuk agent berbasis skema standar MCP:
+### 3. Model Context Protocol (MCP) Live Store
+- Real-time search across the NPM registry for official and community MCP servers.
+- Dynamic agent attachment and execution via standardized tool calling schemas:
   - **Finance (Rina)**: `calculate_budget`, `generate_invoice_draft`, `financial_report_summary`.
   - **Design (Dimas)**: `create_wireframe_spec`, `design_system_tokens`, `ux_review_checklist`.
-  - **Engineering & Operations**: Alat analisis spesifikasi komponen dan estimasi timeline.
+  - **Engineering & Operations**: Component analyzer, timeline estimation, and code review runners.
 
-### 4. Papan Kanban Proyek & Persetujuan Berjenjang
-- **Approval Gating**: Rencana sprint dari Leader tidak pernah dieksekusi sebelum ada konfirmasi user (melalui input "setuju" di chat atau tombol persetujuan).
-- **Idempotent Task Creation**: Percobaan persetujuan ulang tidak akan menduplikasi tugas yang sudah dibuat di Kanban.
-- **Manajemen Multi-Project**: Filter dan pisahkan backlog tugas berdasarkan proyek tertentu.
-- **Interaksi Status**: Pindahkan tugas antar kolom (*Backlog* ➔ *In Progress* ➔ *Done*) dengan pembaruan status real-time.
+### 4. Project-Scoped Kanban Board & Approval Gating
+- **Strict Approval Gating**: Leader sprint plans never execute without explicit user approval.
+- **Idempotent Task Creation**: Re-approving plans never duplicates existing Kanban tasks.
+- **Multi-Project Scoping**: Filter, create, and organize tasks across multiple distinct project boards.
+- **Real-Time Kanban Interaction**: Move tasks seamlessly between columns (*Backlog* ➔ *In Progress* ➔ *Done*).
 
-### 5. Chat Multi-Thread & Penyimpanan Durabel
-- **Isolasi Thread Percakapan**: Kemampuan membuat topik obrolan baru, mengganti thread aktif, dan mengarsipkan diskusi lama.
-- **Penyimpanan Durabel JSON**: Riwayat chat dan data kanban tersimpan permanen di `data/chat_history.json` dan `data/kanban.json`.
-- **Atomic Writes & Concurrency Mutex**: Seluruh mutasi disk diserialisasi menggunakan `AsyncMutex` untuk mencegah *data corruption* atau *race condition*.
-- **Proteksi Batasan Data (DoS Guard)**: Penerapan batas maksimum karakter pada judul, deskripsi tugas, dan batas kuota pesan.
-
-### 6. Kustomisasi Profil Tim (Team Settings)
-- Konfigurasi profil anggota tim secara dinamis melalui halaman pengaturan:
-  - Aktifkan/nonaktifkan anggota tertentu dari ruang kantor 3D.
-  - Personalisasi warna pakaian (baju, celana, rambut, kulit).
-  - Tentukan model LLM independen untuk masing-masing agent.
+### 5. Persistent Multi-Thread Chat & Durable Storage
+- **Thread Isolation**: Create new chat topics, switch active threads, and archive discussions cleanly.
+- **Durable JSON Storage**: Complete chat histories and Kanban tasks persisted to disk.
+- **Atomic Writes & Concurrency Mutex**: All mutations serialized via `AsyncMutex` preventing file corruption or race conditions.
 
 ---
 
-## Arsitektur Sistem
+## 🎯 What We Are Looking For (Contribution Wishlist)
+
+We are actively seeking contributions across several core areas. If you'd like to contribute, here are great ideas to get started:
+
+### 1. 🎨 3D Virtual Office & Three.js Visuals (`src/components/three/`)
+- **New Office Furniture & Interactive Props**: Add procedural 3D models like an espresso machine (with steam particles!), a break room ping-pong table, blinking LED server racks, whiteboards, and potted plants.
+- **Lighting & Atmosphere**: Implement dynamic Day / Night cycle lighting, cozy ambient shadows, custom GLSL shaders, or weather effects (rain on the window).
+- **Avatars & Animations**: Add character accessories (glasses, headphones, hoodies), custom skin tones, and new idle animations (sipping coffee, stretching, pacing).
+- **Camera & Room Navigation**: Add smooth isometric zoom (wheel scroll), pan controls, or customizable room layouts.
+
+### 2. 🛠️ MCP (Model Context Protocol) Server Integrations (`server/mcp/`)
+- **Popular Cloud & Dev Integrations**: Build and test MCP integrations for GitHub, GitLab, PostgreSQL, Redis, Slack, Discord, Notion, Jira, Linear, and Google Workspace.
+- **Agent Skill Catalog**: Expand our live registry search (`server/mcp/catalog.js`) to discover and install tools dynamically.
+
+### 3. 🤖 AI Agent Orchestration & LLM Providers (`server/agents/`, `data/team.json`)
+- **Local & Alternative LLM Support**: Support local LLM execution via Ollama, LM Studio, or vLLM alongside cloud providers (Anthropic Claude, OpenAI GPT-4, Google Gemini, Groq, DeepSeek).
+- **Multi-Agent Collaboration Heuristics**: Improve inter-agent communication, automated peer review (e.g., QA reviewing Developer's code before marking tasks done), and debate pipelines.
+
+### 4. 📊 Project Kanban, Chat UI & Audio Polish (`src/components/`)
+- **Kanban Enhancements**: Drag-and-drop task reordering, due date pickers, priority tags, and export/import sprint data (JSON/CSV/Markdown).
+- **Sound Effects & Ambience (Optional Audio)**: Add subtle retro 8-bit sound effects (keyboard clacking, task completion chime, agent speech bubble pops) with an easily accessible mute toggle.
+
+### 5. ⚡ WebGL Performance & Optimization
+- **Low-End Device Compatibility**: Mesh instancing, geometry batching, texture optimization, and automated FPS throttling when tab is inactive.
+
+For technical guidelines and setup steps, please see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+## System Architecture
 
 ```mermaid
 graph TD
@@ -137,18 +165,19 @@ graph TD
     ChatUI["Multi-Thread Chat Panel"]
     KanbanUI["Kanban Board Component"]
     SettingsUI["Team Settings Page"]
+    MCPStoreUI["MCP & Skill Store Modal"]
   end
   
   subgraph BackendService ["Backend Layer (Express.js)"]
     APIRouter["Express API Router (/api)"]
     OrchestratorService["Multi-Agent Orchestrator"]
-    MCPRegistry["MCP Tool Engine (/api/mcp)"]
+    MCPRegistry["Live MCP Catalog Engine (/api/mcp)"]
     StorageEngine["AsyncMutex & Storage Engine"]
   end
   
   subgraph ExternalAI ["AI Execution Engine"]
     OpenCodeRunner["OpenCode CLI Bridge"]
-    ProviderAPIs["LLM Models (Claude / GPT / Custom)"]
+    ProviderAPIs["LLM Models (Claude / GPT / Local)"]
   end
   
   subgraph Persistence ["Durable Local Storage"]
@@ -158,7 +187,7 @@ graph TD
   end
 
   User <--> FrontendClient
-  FrontendClient <-->|HTTP / REST| APIRouter
+  FrontendClient <--> APIRouter
   APIRouter <--> OrchestratorService
   APIRouter <--> MCPRegistry
   APIRouter <--> StorageEngine
@@ -169,262 +198,43 @@ graph TD
 
 ---
 
-## Roster Tim AI & Spesialisasi Agent
+## AI Agent Roster & Specializations
 
-| Agent | Peran / Jabatan | Domain MCP | Tanggung Jawab Teknis |
-| :--- | :--- | :--- | :--- |
-| **Arif** | `Project Lead / Coordinator` | Operations, Management | Elicitation requirement, breakdown tugas sprint, delegasi antar-agent |
-| **Rina** | `Finance / Accountant` | Finance | Kalkulasi estimasi budget, draft invoice, analisis laporan keuangan |
-| **Dimas** | `UI/UX Designer` | Design | Desain sistem antarmuka, pembuatan spesifikasi wireframe, review UX |
-| **Bayu** | `Product / Frontend Engineer` | Engineering | Implementasi komponen antarmuka, integrasi logika, optimasi performa |
-| **Sinta** | `Marketing / Growth` | Marketing | Strategi go-to-market, copywriting promosi, perancangan kampanye |
-| **Mira** | `Sales / Client Relations` | Sales | Riset kebutuhan prospek, penyusunan pitching proposal, komunikasi klien |
-| **Eko** | `Operations / Admin Support` | Operations | Manajemen timeline sprint, verifikasi kelengkapan dokumen, administrasi |
-
----
-
-## Model Context Protocol (MCP) Tools
-
-Agen AI dapat memanggil tools terstandarisasi untuk mendapatkan hasil kalkulasi dan dokumen terstruktur:
-
-- `calculate_budget`: Menghitung estimasi biaya berdasarkan item, kuantitas, dan mata uang (default: `IDR`).
-- `generate_invoice_draft`: Menyusun dokumen draf invoice (`INV-XXXXXX`) dengan tanggal jatuh tempo.
-- `financial_report_summary`: Mengolah perbandingan pemasukan vs pengeluaran menjadi persentase margin keuntungan.
-- `create_wireframe_spec`: Menyusun spesifikasi teknis antarmuka halaman web, hierarki komponen, dan user flow.
-- `design_system_tokens`: Menghasilkan token desain warna, tipografi, dan spasi untuk implementasi antarmuka.
-
-> [!NOTE]
-> Daftar endpoint dan skema parameter tools dapat diinspeksi secara dinamis via `GET /api/mcp/tools`.
+| Name | Role | Specialization | MCP Tools | Avatar Color |
+| :--- | :--- | :--- | :--- | :--- |
+| **Arif** | Team Leader & Orchestrator | Sprint planning, delegation, requirement validation | Orchestrator Engine | `#4F46E5` (Indigo) |
+| **Budi** | Frontend Engineer | React 18, Three.js, CSS, interactive animations | Web Component Spec | `#059669` (Emerald) |
+| **Siti** | Backend Engineer | Express API, database schemas, storage integrity | Data Contract Tools | `#D97706` (Amber) |
+| **Dimas** | UI/UX Designer | Wireframes, design tokens, accessibility review | `create_wireframe_spec` | `#7C3AED` (Purple) |
+| **Rina** | Finance Specialist | Sprint budget calculation, cloud cost estimation | `calculate_budget` | `#DC2626` (Rose) |
+| **Bayu** | DevOps Specialist | CI/CD pipelines, containerization, build optimization | Deployment Tools | `#0284C7` (Sky Blue) |
+| **Maya** | QA Specialist | Unit tests, test suites, contract verification | Testing Suite Runner | `#EA580C` (Orange) |
 
 ---
 
-## Alur Kerja Sprint & Pipeline Kanban
+## Testing & Verification
 
-```text
-[Input Kebutuhan dari User]
-          │
-          ▼
-   [Leader: Arif]
-          │
-          ├──────────────┐
-          ▼              ▼
-[Kebutuhan Ambigu?]   [Kebutuhan Lengkap]
-          │              │
-          ▼              ▼
-  [Fase Clarifying]  [Fase Awaiting Confirmation]
-  (Minta rincian)    (Breakdown Sprint & Daftar Task)
-                         │
-                         ├─────────────────────────────┐
-                         ▼                             ▼
-                 [Balas: "setuju"]             [Klik: Approve Plan]
-                         │                             │
-                         └──────────────┬──────────────┘
-                                        ▼
-                         [Idempotency & Mutex Check]
-                                        ▼
-                         [Task Ditambahkan ke Backlog]
-                                        ▼
-                      [Pergerakan Kanban: In Progress ➔ Done]
-```
-
----
-
-## Konfigurasi & Environment Variables
-
-Pengaturan sistem dapat disesuaikan menggunakan berkas `.env` di root direktori proyek:
-
-| Variabel | Tipe | Nilai Default | Deskripsi |
-| :--- | :---: | :---: | :--- |
-| `BACKEND_PORT` | `Number` | `3001` | Port jaringan untuk layanan Express Backend |
-| `OPENCODE_MODELS` | `String` | *(Daftar bawaan)* | Daftar identifier model AI yang dipisahkan koma |
-| `CHAT_STORAGE_FILE` | `String` | `data/chat_history.json` | Lokasi berkas penyimpanan persisten riwayat chat |
-| `KANBAN_STORAGE_FILE` | `String` | `data/kanban.json` | Lokasi berkas penyimpanan persisten data Kanban |
-| `NODE_ENV` | `String` | `development` | Status environment runtime (`development` / `production`) |
-
-Contoh isi `.env`:
-```ini
-BACKEND_PORT=3001
-OPENCODE_MODELS=9router/claude-haiku-4.5-thinking-agentic,9router/claude-opus-4-1-latest,9router/claude-sonnet-4-20250514
-NODE_ENV=development
-```
-
----
-
-## Dokumentasi REST API
-
-### 1. Layanan Chat & AI
-
-#### `POST /api/chat`
-Mengirim prompt percakapan ke mode percakapan standar atau mode Leader koordinasi.
-
-- **Request Body**:
-  ```json
-  {
-    "message": "Kita ingin membuat modul integrasi payment gateway",
-    "mode": "leader",
-    "sessionId": "ses_opsional",
-    "model": "9router/claude-opus-4-1-latest"
-  }
-  ```
-
-- **Response Body (Leader - Clarifying Phase)**:
-  ```json
-  {
-    "reply": "Sebelum membagi tugas, mohon konfirmasi beberapa poin teknis berikut.",
-    "sessionId": "ses_ede0a6b9effe8TjiONpWANC1k4",
-    "model": "9router/claude-opus-4-1-latest",
-    "mode": "leader",
-    "phase": "clarifying",
-    "questions": [
-      "Payment gateway apa yang akan digunakan (Midtrans, Xendit, Stripe)?",
-      "Apakah memerlukan webhook handler untuk verifikasi status instan?"
-    ],
-    "plan": null
-  }
-  ```
-
-#### `POST /api/orchestrate`
-Memicu alur kerja koordinasi multi-agent untuk tugas lintas divisi.
-
-#### `GET /api/chat/threads` & `POST /api/chat/threads`
-Mendapatkan semua thread percakapan aktif atau membuat thread baru.
-
-#### `POST /api/chat/approve-plan`
-Menyetujui sprint plan dan secara aman memasukkan seluruh sub-task ke Kanban backlog.
-
----
-
-### 2. Layanan Kanban & Proyek
-
-- `GET /api/kanban/tasks`: Mengambil seluruh daftar tugas dan kolom Kanban.
-- `POST /api/kanban/tasks`: Membuat tugas baru secara manual.
-- `PATCH /api/kanban/tasks/:id`: Memperbarui posisi kolom atau atribut tugas.
-- `DELETE /api/kanban/tasks/:id`: Menghapus tugas dari sistem.
-- `GET /api/kanban/projects` & `POST /api/kanban/projects`: Mengelola kategori proyek Kanban.
-
----
-
-### 3. Layanan Roster Tim & Sistem
-
-- `GET /api/team`: Mengambil daftar profil dan konfigurasi visual anggota tim.
-- `POST /api/team`: Mendaftarkan agent atau anggota tim baru.
-- `PUT /api/team/:id`: Memperbarui atribut, warna pakaian, atau model AI agent.
-- `GET /api/models`: Mengambil daftar model AI yang siap digunakan.
-- `GET /api/mcp/tools`: Mengambil metadata tools MCP yang tersedia.
-- `GET /api/health`: Endpoint pemeriksaan kesehatan layanan (*health check*).
-
----
-
-## Pengujian & Verifikasi
-
-Proyek menggunakan runner pengujian terintegrasi Node.js (`node:test`) tanpa dependensi pihak ketiga tambahan:
+The project includes an automated test suite (native Node.js Test Runner) validating API contracts, multi-thread isolation, team management, and live MCP catalog searches:
 
 ```bash
-# Menjalankan seluruh rangkaian tes (Unit + Integration + Contracts)
+# Run the test suite (all 29 tests must pass)
 npm test
 
-# Menjalankan unit tests cepat (Leader Prompt, Team Store, Thread & Project Scoping)
-npm run test:unit
-
-# Menjalankan integration tests (Chat Contract & Kanban Persistence)
-npm run test:integration
-```
-
-> [!NOTE]
-> Seluruh pengujian unit berjalan dalam memori dan berkas sementara yang dibersihkan secara otomatis setelah pengujian selesai.
-
----
-
-## Struktur Direktori Proyek
-
-```text
-new_pixel/
-├── data/                         # Berkas penyimpanan data JSON durabel
-│   ├── chat_history.json         # Riwayat thread, pesan, dan sesi
-│   ├── kanban.json               # Tugas, status kolom, dan riwayat plan
-│   └── team.json                 # Konfigurasi kustom anggota tim
-├── public/                       # Aset web statis
-├── server/                       # Layanan Backend Express.js
-│   ├── agents/                   # Logika agen cerdas
-│   │   ├── definitions.js        # Persona prompt, domain wewenang, dan tools
-│   │   └── orchestrator.js       # Mesin orkestrasi kolaborasi multi-agent
-│   ├── mcp/                      # Modul Model Context Protocol
-│   │   ├── server.js             # Engine runtime pemanggilan tool
-│   │   └── tools.js              # Definisi fungsi domain (Finance, Design, dll.)
-│   ├── index.js                  # Entrypoint server dan rute endpoint REST
-│   └── storage.js                # AsyncMutex & operasi penulisan file atomik
-├── src/                          # Aplikasi Frontend React 18
-│   ├── components/               # Komponen antarmuka pengguna
-│   │   ├── three/                # Ruang 3D Three.js & React Three Fiber
-│   │   │   ├── CatMochi.jsx      # Karakter kucing kantor interaktif
-│   │   │   ├── Character.jsx     # Mesh karakter dan sistem animasi
-│   │   │   ├── Characters.jsx    # Manajemen penempatan karakter di ruangan
-│   │   │   ├── Furniture.jsx     # Meja, kursi kerja, komputer, rak
-│   │   │   ├── OfficeCanvas.jsx  # Stage Three.js Canvas dan kontrol sudut pandang
-│   │   │   └── OfficeRoom.jsx    # Lantai isometrik, dinding, dan pencahayaan
-│   │   ├── ChatPanel.jsx         # Antarmuka panel percakapan dan thread
-│   │   ├── KanbanBoard.jsx       # Papan alur kerja tugas Kanban
-│   │   ├── OfficeHeader.jsx      # Header navigasi utama
-│   │   ├── TeamSettingsPage.jsx  # Halaman kustomisasi roster dan karakter
-│   │   └── VirtualOfficePage.jsx # Halaman kontainer utama
-│   ├── App.jsx                   # Root component dengan Error Boundary
-│   ├── index.css                 # Sistem desain global
-│   └── main.jsx                  # Titik inisialisasi React DOM
-├── tests/                        # Berkas pengujian otomatis (Node.js test runner)
-│   ├── api-chat-contract.mjs
-│   ├── durable-chat-kanban.mjs
-│   ├── leader-contract.mjs
-│   ├── team-management.mjs
-│   └── thread-and-project-kanban.mjs
-├── .env.example                  # Template variabel lingkungan
-├── .github/                      # GitHub templates (Pull Request checklist & CLA)
-├── CLA.md                        # Contributor License Agreement (Legal relicensing rights)
-├── CONTRIBUTING.md               # Contributing guidelines & workflow
-├── LICENSE                       # Dual Licensing Notice (GNU AGPLv3 + Commercial)
-├── package.json                  # Project dependencies and test scripts
-└── vite.config.js                # Vite bundler & reverse proxy configuration
+# Verify production Vite build (zero errors)
+npm run build
 ```
 
 ---
 
-## Penyelesaian Masalah (Troubleshooting)
+## Contributing Guidelines
 
-### 1. Pesan "Backend not running — start with: npm run dev"
-Frontend Vite tidak dapat menghubungi API backend pada port `3001`.
-- Pastikan menjalankan perintah `npm run dev` (bukan `npm run dev:frontend`).
-- Jika port 3001 sedang digunakan oleh aplikasi lain, gunakan port berbeda:
-  ```bash
-  BACKEND_PORT=3002 npm run dev
-  ```
-
-### 2. Pesan "OpenCode service unavailable"
-- Pastikan OpenCode CLI terpasang di sistem operasi Anda:
-  ```bash
-  opencode --version
-  ```
-- Jika belum terpasang, pasang secara global:
-  ```bash
-  npm install -g opencode
-  ```
-- Pastikan provider AI sudah dikonfigurasi menggunakan perintah `opencode providers`.
-
-### 3. Tampilan 3D Tidak Muncul atau Layar Gelap
-- Periksa akselerasi perangkat keras WebGL di browser Anda melalui `chrome://gpu` atau [get.webgl.org](https://get.webgl.org/).
-- Pastikan fitur *hardware acceleration* pada browser dalam keadaan aktif.
+We warmly welcome community contributions from across the globe!
+- **Accepting the CLA**: All contributors agree to [CLA.md](CLA.md) by simply checking the agreement checkbox in the Pull Request template upon opening a PR. No third-party accounts or bots required.
+- **Workflow & Standards**: Please review [CONTRIBUTING.md](CONTRIBUTING.md) for branch naming conventions, architecture rules (`data/team.json`, MCP tools), and required verification commands.
 
 ---
 
-## Panduan Kontribusi (Contributing Guidelines)
-
-We welcome global community contributions! / Kami sangat menyambut kontribusi dari komunitas global!
-
-- **Contributor License Agreement (CLA)**: All contributors agree to the [CLA.md](CLA.md) by checking the agreement box in the GitHub Pull Request template upon submitting a PR. No third-party accounts or bots required.
-- **Workflow & Standards**: Please review [CONTRIBUTING.md](CONTRIBUTING.md) for branch naming conventions, architecture rules (`data/team.json`, MCP tools), and required testing commands (`npm test`, `npm run build`).
-- **Issues & Feedback**: Report bugs and propose new features via [GitHub Issues](https://github.com/Thecaracter/new_pixel/issues).
-
----
-
-## Lisensi & Dual Licensing (License)
+## License & Dual Licensing
 
 Pixel Works Virtual Office is released under a **Dual Licensing model**:
 
