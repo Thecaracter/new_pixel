@@ -19,8 +19,7 @@
 ---
 
 ## ⚖️ Contributor License Agreement (CLA) - Mandatory
-To ensure your contribution can be accepted into Pixel Works Virtual Office, please check all statements below:
+By submitting this pull request, you confirm and agree to the following terms:
 
 - [ ] **Original Work**: I certify that this contribution is my original work, or that I have obtained all necessary intellectual property rights to submit it.
-- [ ] **CLA Agreement**: I have read, understood, and agree to the terms of the [Contributor License Agreement (CLA)](./CLA.md), including granting the Project Owner rights to manage licensing, implement a Dual Licensing model (GNU AGPLv3 + Commercial), and sell commercial/proprietary licenses without royalty obligations to me.
-- [ ] **Digital Signature**: I agree to digitally sign the **CLA Assistant** bot prompt that will automatically appear in this Pull Request comments.
+- [ ] **CLA Agreement**: I have read, understood, and agree to the [Contributor License Agreement (CLA)](./CLA.md). I hereby grant the Project Owner an irrevocable, perpetual, worldwide, transferable, royalty-free, and sublicensable license to use, modify, distribute, and relicence this work (including under Dual Commercial / Proprietary terms) without royalty obligations or additional consent.

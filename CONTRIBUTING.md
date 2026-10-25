@@ -14,7 +14,7 @@ Pixel Works Virtual Office operates under a **Dual Licensing model (GNU AGPLv3 +
 2. **Protection Against Unauthorized Commercial Exploitation**: Third parties, corporations, and vendors **MAY NOT** take this code, close the source, rebrand it, or resell it as a proprietary SaaS or commercial distribution without purchasing an official Commercial License from the Project Owner.
 3. **Relicensing & Commercial Authority**: By signing the CLA, you grant the Project Owner the legal authority to license and sell commercial/enterprise editions of the software (including your contributions) to corporate clients, while your authorship remains permanently recognized in Git commit history.
 
-When you open a Pull Request, the automated **CLA Assistant** bot will prompt you to complete a 1-click digital signature via your GitHub account.
+Agreeing to the CLA is fast and frictionless: simply check the **CLA Agreement** checkbox in the GitHub Pull Request template when submitting your PR. No third-party accounts, bots, or paperwork required.
 
 ---
 
@@ -72,7 +72,7 @@ npm run build
    ```
 3. Open a Pull Request on the main repository.
 4. Fill out the PR template checklist and check the **CLA Agreement** checkbox.
-5. Click the link provided by the **CLA Assistant bot** comment to sign the CLA.
+5. Submit the PR for review and automated test checks.
 
 ---
 

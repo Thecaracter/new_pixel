@@ -15,7 +15,7 @@
   <a href="https://expressjs.com"><img src="https://img.shields.io/badge/Express-4.18-000000?style=flat-square&logo=express&logoColor=white" alt="Express" /></a>
   <img src="https://img.shields.io/badge/MCP-Compatible-FF6F00?style=flat-square&logo=json&logoColor=white" alt="MCP Compatible" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0%20%7C%20Commercial-blue.svg?style=flat-square" alt="AGPL-3.0 / Commercial License" /></a>
-  <a href="CLA.md"><img src="https://img.shields.io/badge/CLA-Assistant-green.svg?style=flat-square" alt="CLA Assistant" /></a>
+  <a href="CLA.md"><img src="https://img.shields.io/badge/CLA-Required-green.svg?style=flat-square" alt="CLA Required" /></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome" /></a>
 </p>
 
@@ -418,7 +418,7 @@ Frontend Vite tidak dapat menghubungi API backend pada port `3001`.
 
 We welcome global community contributions! / Kami sangat menyambut kontribusi dari komunitas global!
 
-- **Contributor License Agreement (CLA)**: All contributors must sign the [CLA.md](CLA.md) before Pull Requests can be merged. An automated bot ([CLA Assistant](https://cla-assistant.io/)) will guide you on your first PR.
+- **Contributor License Agreement (CLA)**: All contributors agree to the [CLA.md](CLA.md) by checking the agreement box in the GitHub Pull Request template upon submitting a PR. No third-party accounts or bots required.
 - **Workflow & Standards**: Please review [CONTRIBUTING.md](CONTRIBUTING.md) for branch naming conventions, architecture rules (`data/team.json`, MCP tools), and required testing commands (`npm test`, `npm run build`).
 - **Issues & Feedback**: Report bugs and propose new features via [GitHub Issues](https://github.com/Thecaracter/new_pixel/issues).
 

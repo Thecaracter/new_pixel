@@ -50,10 +50,9 @@ The Project is published and distributed to the open-source community under the 
 ---
 
 ### 7. Digital Acceptance Procedure
-You can digitally sign and accept this CLA when submitting your first Pull Request:
-1. The automated **CLA Assistant bot** will post a comment on your Pull Request.
-2. Click the authorization link in the bot's comment to sign with your GitHub account (one-click process).
-3. Alternatively, checking the CLA agreement box in the GitHub Pull Request template confirms your agreement to these terms.
+You accept and agree to the terms of this CLA through the GitHub Pull Request workflow:
+1. When submitting a Pull Request to this repository, you must check the **CLA Agreement** checkbox in the Pull Request template.
+2. Checking this box and submitting the Pull Request constitutes an affirmative, legally binding electronic signature and complete agreement to all terms set forth in this Agreement.
 
 ---
 
