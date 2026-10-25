@@ -25,6 +25,10 @@
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome" /></a>
 </p>
 
+<p align="center">
+  <img src="docs/preview.png" alt="Pixel Works 3D Virtual Office Preview" width="100%" />
+</p>
+
 ---
 
 ## Table of Contents

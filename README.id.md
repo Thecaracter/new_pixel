@@ -25,6 +25,10 @@
   <a href="CONTRIBUTING.id.md"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome" /></a>
 </p>
 
+<p align="center">
+  <img src="docs/preview.png" alt="Tampilan Kantor Virtual 3D Pixel Works" width="100%" />
+</p>
+
 ---
 
 ## Daftar Isi (Table of Contents)
