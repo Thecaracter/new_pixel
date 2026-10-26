@@ -1495,7 +1495,7 @@ if (isMainModule) {
     const vite = spawn('npm', ['run', 'dev:frontend'], {
       cwd: __rootdir,
       stdio: 'inherit',
-      shell: process.platform === 'win32'
+      shell: true
     });
 
     vite.on('error', (err) => {

@@ -26,6 +26,12 @@
 </p>
 
 <p align="center">
+  <a href="https://codespaces.new/Thecaracter/new_pixel">
+    <img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces" />
+  </a>
+</p>
+
+<p align="center">
   <img src="docs/preview.png" alt="Pixel Works 3D Virtual Office Preview" width="100%" />
 </p>
 

@@ -1,0 +1,23 @@
+{
+  "name": "Pixel Works Virtual Office",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "forwardPorts": [5173, 3001],
+  "portsAttributes": {
+    "5173": {
+      "label": "Pixel Works Web App (Vite)",
+      "onAutoForward": "openPreview"
+    },
+    "3001": {
+      "label": "Express Backend API",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
+}

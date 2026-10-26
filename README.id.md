@@ -26,6 +26,12 @@
 </p>
 
 <p align="center">
+  <a href="https://codespaces.new/Thecaracter/new_pixel">
+    <img src="https://github.com/codespaces/badge.svg" alt="Buka di GitHub Codespaces" />
+  </a>
+</p>
+
+<p align="center">
   <img src="docs/preview.png" alt="Tampilan Kantor Virtual 3D Pixel Works" width="100%" />
 </p>
 
