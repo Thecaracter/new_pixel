@@ -1,4 +1,8 @@
-# Pixel Works — Virtual Office
+<p align="center">
+  <img src="docs/banner.jpeg" alt="New Pixel — Open Source Project Banner" width="100%" />
+</p>
+
+# New Pixel — Virtual Office
 
 <p align="center">
   <strong>Language / Pilihan Bahasa:</strong>

@@ -1,4 +1,8 @@
-# Kantor Virtual — Pixel Works
+<p align="center">
+  <img src="docs/banner.jpeg" alt="New Pixel — Open Source Project Banner" width="100%" />
+</p>
+
+# Kantor Virtual — New Pixel
 
 <p align="center">
   <strong>Pilihan Bahasa / Language:</strong>
