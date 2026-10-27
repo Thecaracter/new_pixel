@@ -38,26 +38,15 @@ export function OfficeHeader({ activeTab = 'office', onSelectTab, activeMemberCo
       {/* 1. Brand & Workspace Identity */}
       <div className="header-brand-block">
         <div className="brand-badge-container">
-          <div className="brand-logo-mark" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L2.5 7.5L12 13L21.5 7.5L12 2Z"
-                fill="currentColor"
-                className="logo-cube-top"
-              />
-              <path
-                d="M2.5 7.5V16.5L12 22V13L2.5 7.5Z"
-                fill="currentColor"
-                fillOpacity="0.8"
-                className="logo-cube-left"
-              />
-              <path
-                d="M12 13V22L21.5 16.5V7.5L12 13Z"
-                fill="currentColor"
-                fillOpacity="0.6"
-                className="logo-cube-right"
-              />
-            </svg>
+          <div className="brand-logo-mark" aria-label="Pixel Works Logo">
+            <img
+              src="/logo.png"
+              alt="Pixel Works Logo"
+              className="brand-logo-img"
+              width="36"
+              height="36"
+              loading="eager"
+            />
           </div>
           <div className="brand-text-meta">
             <div className="brand-title-row">
